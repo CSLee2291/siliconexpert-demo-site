@@ -80,6 +80,10 @@ lib/ + app/                # Next.js (App Router) mirror of the Python backend
 acl_pn_comID/              # user-provided Excel mapping (gitignored)
 .env                       # local secrets + config (gitignored)
 .env.template              # template to copy from
+requirements.txt           # root-level deps (+ gunicorn) for Azure Oryx build
+runtime.txt                # pins Python 3.12 for Azure Oryx
+startup.sh                 # gunicorn launcher; referenced by Azure Startup Command
+.gitattributes             # pins *.sh to LF so Azure Linux can execute startup.sh
 ```
 
 ## `/api/*` contract (both backends)
@@ -153,6 +157,72 @@ For other representative parts:
 * `1410025601-02` — Nexperia analog switch (exercises the full
   pricing / inventory / 45-tier price-break path).
 
+## Deployment — Azure Web App (Linux, Python 3.12)
+
+The Flask backend runs on Azure App Service Linux without code changes.
+**Deploy via the VS Code Azure App Service extension** — do *not* use
+GitHub Actions (see "Known-bad path" below).
+
+### One-time setup (Azure portal)
+
+1. Create a **Web App** — Linux, Python 3.12 runtime.
+2. **Configuration → General settings → Startup Command**:
+   ```
+   Bash startup.sh
+   ```
+3. **Configuration → Application settings** — add:
+
+   | Name | Value |
+   |---|---|
+   | `SILICONEXPERT_LOGIN` | your SE login |
+   | `SILICONEXPERT_API_KEY` | your SE API key |
+   | `EXCEL_PATH` | `/home/site/wwwroot/acl_pn_comID/V_SE_MPN_LIST20260128.xlsx` |
+   | `RECENT_DB_PATH` | `/home/recent_searches.db` (persists across restarts) |
+   | `SCM_DO_BUILD_DURING_DEPLOYMENT` | `true` (Oryx runs pip install) |
+   | `DENODO_*` | *leave blank unless the Denodo host is reachable from Azure* |
+
+### Deploy from VS Code
+
+1. Install the **Azure App Service** extension.
+2. Sign in to your Azure tenant.
+3. Right-click the Web App → **Deploy to Web App…** → pick the repo root.
+4. The extension zips the working directory as-is and uploads; Kudu +
+   Oryx run `pip install -r requirements.txt` on the server.
+
+### Upload the Excel mapping (once)
+
+The xlsx is gitignored, so VS Code deploy won't include it unless you
+untrack it. Easiest is a one-off static upload:
+
+```powershell
+az webapp deploy `
+  --resource-group <your-rg> --name <your-app> `
+  --type static `
+  --src-path ".\acl_pn_comID\V_SE_MPN_LIST20260128.xlsx" `
+  --target-path "/home/site/wwwroot/acl_pn_comID/V_SE_MPN_LIST20260128.xlsx"
+```
+
+`--type static` uploads one file without triggering Oryx or restarting
+the app. **Do not use `--type zip` for data files** — it re-triggers a
+build.
+
+### Smoke tests
+
+```bash
+curl https://<your-app>.azurewebsites.net/api/health
+curl "https://<your-app>.azurewebsites.net/api/search?q=1410025327-27A0"
+```
+
+### Known-bad path: Azure-generated GitHub Actions workflow
+
+The workflow Azure's Deployment Center auto-creates (`.github/workflows/
+main_<app>.yml`) uses `actions/upload-artifact@v4` +
+`azure/webapps-deploy@v3`. That combo compresses the whole app into
+`output.tar.zst` inside `/home/site/wwwroot/`, so `startup.sh` never
+lands at the path the Startup Command expects. Container exits 127
+immediately on every cold start. If the portal re-creates the workflow,
+delete it — VS Code deploy is the supported path.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
@@ -162,3 +232,6 @@ For other representative parts:
 | Denodo banner on every search | Denodo env set but network unreachable | Clear the `DENODO_*` values in `.env` or fix the network path |
 | Next.js won't start — "address already in use :3001" | Stale dev server | Kill the PID holding 3001 or change `-p` in `package.json` |
 | Empty result card | SE returned no `ResultDto` | Check the reason banner; typical causes are expired API key or an unmapped ComID |
+| Azure container exits 127 on cold start | `startup.sh` not at `/home/site/wwwroot/` (Oryx compressed it into `output.tar.zst`) | Redeploy via VS Code; do not use Azure's auto-generated GitHub Actions workflow |
+| Azure `FileNotFoundError: Excel file not found` | xlsx missing on Azure or `EXCEL_PATH` wrong | Re-upload the xlsx via `az webapp deploy --type static` and confirm `EXCEL_PATH` is an absolute path |
+| Azure Oryx "Couldn't detect platform 'python'" during deploy | Deployment target was a data-only zip (no `requirements.txt` inside) | Use `--type static` for data files, or include the whole repo in the zip |
