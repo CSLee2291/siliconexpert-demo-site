@@ -24,8 +24,25 @@ The first tool call for a part number fetches `/api/detail` once and caches it i
 
 ## Install
 
+Use a dedicated virtualenv. Claude Desktop launches the server with whatever
+`python` it finds on PATH, which is often a different interpreter than the one
+you used on the command line — so installing deps into a venv and pointing the
+config at `<venv>/Scripts/python.exe` (Windows) or `<venv>/bin/python`
+(macOS/Linux) avoids "No module named httpx" surprises.
+
+**Windows (PowerShell):**
+```powershell
+cd mcp_server
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+**macOS / Linux:**
 ```bash
 cd mcp_server
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -48,13 +65,15 @@ Edit `claude_desktop_config.json`:
 * Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 * macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-Add an `mcpServers` entry:
+Add an `mcpServers` entry. **Use the absolute path to the venv's Python**, not
+just `"python"`, or Claude Desktop will launch a different interpreter that
+doesn't have `httpx` / `mcp` installed:
 
 ```json
 {
   "mcpServers": {
     "siliconexpert-demo": {
-      "command": "python",
+      "command": "C:\\Users\\cs.lee.ADVANTECH\\Documents\\ClaudeCodeProjects\\SiliconExpertDemoSite\\mcp_server\\.venv\\Scripts\\python.exe",
       "args": [
         "C:\\Users\\cs.lee.ADVANTECH\\Documents\\ClaudeCodeProjects\\SiliconExpertDemoSite\\mcp_server\\server.py"
       ],
@@ -66,14 +85,27 @@ Add an `mcpServers` entry:
 }
 ```
 
-Restart Claude Desktop. You should see the hammer / tools icon in the prompt bar — clicking it lists all 11 tools.
+On macOS/Linux the `command` path is `<repo>/mcp_server/.venv/bin/python`.
+
+Restart Claude Desktop. You should see the hammer / tools icon in the prompt
+bar — clicking it lists all 11 tools.
+
+**If you see `No module named httpx` in the log**, the config is pointing at
+the wrong Python. Verify the `command` path resolves to the venv you installed
+deps into. On Windows you can confirm with:
+
+```powershell
+C:\…\mcp_server\.venv\Scripts\python.exe -c "import httpx, mcp; print('ok')"
+```
 
 ## Wiring it into Claude Code
 
-From any directory:
+From any directory, pointing at the venv's Python:
 
 ```bash
-claude mcp add siliconexpert-demo --scope user -- python /absolute/path/to/mcp_server/server.py
+claude mcp add siliconexpert-demo --scope user -- \
+  /absolute/path/to/mcp_server/.venv/bin/python \
+  /absolute/path/to/mcp_server/server.py
 ```
 
 Or add it per-project to `.mcp.json`:
@@ -82,7 +114,7 @@ Or add it per-project to `.mcp.json`:
 {
   "mcpServers": {
     "siliconexpert-demo": {
-      "command": "python",
+      "command": "./mcp_server/.venv/Scripts/python.exe",
       "args": ["./mcp_server/server.py"]
     }
   }
