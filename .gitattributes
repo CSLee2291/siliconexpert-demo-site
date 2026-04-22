@@ -1,0 +1,19 @@
+# Keep shell scripts LF — Azure Linux App Service won't boot a CRLF startup.sh.
+*.sh           text eol=lf
+# Keep other text files normalized (Git's default autodetect).
+* text=auto
+# Binary types — never diff/merge.
+*.xlsx         binary
+*.xls          binary
+*.pdf          binary
+*.zip          binary
+*.db           binary
+*.sqlite       binary
+*.sqlite3      binary
+*.woff         binary
+*.woff2        binary
+*.png          binary
+*.jpg          binary
+*.jpeg         binary
+*.gif          binary
+*.ico          binary
