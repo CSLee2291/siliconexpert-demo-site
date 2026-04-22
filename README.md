@@ -77,6 +77,10 @@ backend/                   # Python / Flask backend
   denodo_client.py         #   optional fallback for PNs not in Excel
   recent_store.py          #   SQLite-backed recent-search history
 lib/ + app/                # Next.js (App Router) mirror of the Python backend
+mcp_server/                # MCP server exposing the Azure Web App to LLMs
+  server.py                #   11 tools (overview, lifecycle, pricing, …)
+  requirements.txt         #   mcp + httpx
+  README.md                #   setup + Claude Desktop / Claude Code config
 acl_pn_comID/              # user-provided Excel mapping (gitignored)
 .env                       # local secrets + config (gitignored)
 .env.template              # template to copy from
@@ -212,6 +216,24 @@ build.
 curl https://<your-app>.azurewebsites.net/api/health
 curl "https://<your-app>.azurewebsites.net/api/search?q=1410025327-27A0"
 ```
+
+## MCP server (LLM integration)
+
+`mcp_server/` wraps the live Azure Web App as a Model Context Protocol server
+so any MCP-aware client (Claude Desktop, Claude Code, Cursor, etc.) can answer
+questions about Advantech parts directly. Eleven focused tools cover every
+detail tab plus cross-reference and PCN history. The first tool call for a
+given PN fetches the full bundle; subsequent slice-tool calls on the same PN
+are served from an in-process cache.
+
+```bash
+cd mcp_server
+pip install -r requirements.txt
+python server.py       # stdio transport
+```
+
+Point it at a different backend with `SE_API_BASE`. See `mcp_server/README.md`
+for full setup, Claude Desktop / Claude Code config, and example prompts.
 
 ### Known-bad path: Azure-generated GitHub Actions workflow
 
