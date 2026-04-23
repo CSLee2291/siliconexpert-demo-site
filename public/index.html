@@ -52,6 +52,26 @@
   ::-webkit-scrollbar{width:10px;height:10px}
   ::-webkit-scrollbar-thumb{background:#d0cec7;border-radius:10px}
   ::-webkit-scrollbar-track{background:transparent}
+
+  /* loading spinner + skeleton shimmer (used by ResultsLoading) */
+  @keyframes ci-spin { to { transform: rotate(360deg); } }
+  @keyframes ci-shimmer {
+    0%   { background-position: -400px 0; }
+    100% { background-position:  400px 0; }
+  }
+  .ci-spinner{
+    width:18px;height:18px;border-radius:50%;
+    border:2px solid var(--line); border-top-color: var(--accent);
+    animation: ci-spin 0.9s linear infinite;
+    display:inline-block;
+  }
+  .ci-skeleton{
+    background: linear-gradient(90deg,
+      #f2efe8 0%, #eae6dc 40%, #f2efe8 80%);
+    background-size: 800px 100%;
+    animation: ci-shimmer 1.4s linear infinite;
+  }
+
 </style>
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
@@ -171,12 +191,16 @@ async function fetchQuota(){
 // by calling refresh(); all subscribers re-render.
 // --------------------------------------------------------------------------
 const __RECENT = { data: null, inFlight: null, subs: new Set() };
+// Single shared fetch serves both the home card (10) and the sidebar (20),
+// so always request the superset and let consumers slice what they need.
+const __RECENT_FETCH_LIMIT = 20;
 
-async function fetchRecent(limit = 10){
+async function fetchRecent(limit = __RECENT_FETCH_LIMIT){
   if(__RECENT.inFlight) return __RECENT.inFlight;
+  const eff = Math.max(limit, __RECENT_FETCH_LIMIT);
   const p = (async () => {
     try {
-      const j = await API.recent(limit);
+      const j = await API.recent(eff);
       __RECENT.data = { items: Array.isArray(j.items) ? j.items : [],
                         fetchedAt: Date.now(), error: null };
     } catch(err){
@@ -1143,15 +1167,37 @@ function SideNav({ t, lang, route, go, collapsed, setCollapsed }){
 }
 
 // Live RECENT SEARCHES in the sidebar — same data source as the Home card.
+// Keeps up to 20 entries and paginates 8-at-a-time with prev/next arrows.
+const SIDEBAR_RECENT_LIMIT = 20;
+const SIDEBAR_RECENT_PAGE  = 8;
 function SideNavRecent({ t, lang, go }){
-  const { items, error } = useRecentSearches(8);
+  const { items, error } = useRecentSearches(SIDEBAR_RECENT_LIMIT);
+  const [page, setPage] = React.useState(0);
+  const total = items ? items.length : 0;
+  const pageCount = Math.max(1, Math.ceil(total / SIDEBAR_RECENT_PAGE));
+  // Clamp page if the list shrinks (e.g. items cleared on another tab).
+  React.useEffect(()=>{
+    if(page >= pageCount) setPage(Math.max(0, pageCount - 1));
+  }, [pageCount, page]);
+  const start = page * SIDEBAR_RECENT_PAGE;
+  const visible = items ? items.slice(start, start + SIDEBAR_RECENT_PAGE) : [];
+  const canPrev = page > 0;
+  const canNext = page < pageCount - 1;
   return (
     <div style={{marginTop:12}}>
       <div style={{
         padding:"8px 14px", fontSize:10.5, color:"var(--ink-4)",
         fontFamily:"'IBM Plex Mono', monospace", letterSpacing:"0.12em",
-        textTransform:"uppercase",
-      }}>{t.recent}</div>
+        textTransform:"uppercase", display:"flex", alignItems:"center", gap:6,
+      }}>
+        <span style={{flex:1}}>{t.recent}</span>
+        {total > 0 && (
+          <span style={{color:"var(--ink-3)", letterSpacing:"0.04em",
+               textTransform:"none", fontSize:10}}>
+            {Math.min(start + visible.length, total)}/{total}
+          </span>
+        )}
+      </div>
       <div style={{padding:"2px 8px"}}>
         {items === null && (
           <div style={{padding:"6px 8px", fontSize:10.5, color:"var(--ink-4)",
@@ -1171,7 +1217,7 @@ function SideNavRecent({ t, lang, go }){
             {lang==="en"?"No searches yet.":"尚無紀錄。"}
           </div>
         )}
-        {items && items.map(r => {
+        {visible.map(r => {
           const tone = lifecycleTone(r.lifecycle || "");
           return (
             <button key={r.pn} title={r.mpn ? `${r.pn} · ${r.mpn}` : r.pn}
@@ -1201,6 +1247,37 @@ function SideNavRecent({ t, lang, go }){
             </button>
           );
         })}
+        {items && items.length > SIDEBAR_RECENT_PAGE && (
+          <div style={{
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+            gap:6, padding:"6px 4px 2px",
+          }}>
+            <button disabled={!canPrev} onClick={()=>setPage(p=>p-1)}
+              title={lang==="en"?"Previous":"上一頁"}
+              style={{
+                width:22, height:22, display:"inline-flex",
+                alignItems:"center", justifyContent:"center",
+                background: canPrev ? "#fff" : "transparent",
+                border:`1px solid ${canPrev?"var(--line-2)":"var(--line)"}`,
+                borderRadius:2, color: canPrev?"var(--ink-2)":"var(--ink-4)",
+                cursor: canPrev?"pointer":"default",
+              }}>‹</button>
+            <span style={{fontSize:10, color:"var(--ink-3)",
+                 fontFamily:"'IBM Plex Mono', monospace"}}>
+              {page+1}/{pageCount}
+            </span>
+            <button disabled={!canNext} onClick={()=>setPage(p=>p+1)}
+              title={lang==="en"?"Next":"下一頁"}
+              style={{
+                width:22, height:22, display:"inline-flex",
+                alignItems:"center", justifyContent:"center",
+                background: canNext ? "#fff" : "transparent",
+                border:`1px solid ${canNext?"var(--line-2)":"var(--line)"}`,
+                borderRadius:2, color: canNext?"var(--ink-2)":"var(--ink-4)",
+                cursor: canNext?"pointer":"default",
+              }}>›</button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2049,10 +2126,15 @@ function ResultsScreen({ t, lang, go, query, bulk, pns }){
   const [bulkMeta, setBulkMeta] = React.useState(null); // {total, limit, truncated, missing}
   const [sort, setSort] = React.useState("relevance");
   const [lcFilter, setLcFilter] = React.useState("all");
+  // Live progress for the loading state — shown instead of mock cards.
+  //   phase: "search" (hitting /api/search or /api/bulk)
+  //          "details" (enriching each hit via /api/detail)
+  const [progress, setProgress] = React.useState({ phase: "search", done: 0, total: 0 });
 
   React.useEffect(()=>{
     let cancelled = false;
     setApiHits(null); setApiError(null); setBulkMeta(null); setDenodoStatus(null);
+    setProgress({ phase: "search", done: 0, total: 0 });
     const hasBulk = bulk && Array.isArray(pns) && pns.length > 0;
     if(!hasBulk && (!query || !query.trim())){ setApiHits([]); return; }
     (async ()=>{
@@ -2080,6 +2162,7 @@ function ResultsScreen({ t, lang, go, query, bulk, pns }){
           hits = Array.isArray(res.hits) ? res.hits : [];
         }
         // Enrich each hit with /api/detail so cards show real desc/mfr/lc/risk.
+        if(!cancelled) setProgress({ phase: "details", done: 0, total: hits.length });
         const enriched = await Promise.all(hits.map(async h => {
           try {
             if(!h.comId && !h.pn) return { hit: h };
@@ -2090,6 +2173,9 @@ function ResultsScreen({ t, lang, go, query, bulk, pns }){
                      documents: d?.documents, packaging: d?.packaging,
                      countries: d?.countries, cand: d?.raw?.candidate };
           } catch { return { hit: h }; }
+          finally {
+            if(!cancelled) setProgress(p => ({ ...p, done: p.done + 1 }));
+          }
         }));
         if(!cancelled) setApiHits(enriched);
       } catch(err){
@@ -2100,33 +2186,33 @@ function ResultsScreen({ t, lang, go, query, bulk, pns }){
   }, [query, bulk, pns && pns.join("|")]);
 
   // Map enriched API hits onto mock templates so all card fields render with
-  // real SE data when available.
+  // real SE data when available. Returns null while loading so the render
+  // path can show a live progress indicator instead of mock cards.
   const parts = React.useMemo(()=>{
-    if(apiHits && apiHits.length){
-      return apiHits.map((e, i)=>{
-        const tpl = PARTS[i % PARTS.length];
-        const id = e.hit.comId || e.hit.pn || `${i}`;
-        // Prefer the Excel-level hit fields over the detail's reverse-scan
-        // candidate stub (which may be empty when there's no ComID match in
-        // Excel). First-truthy wins per field.
-        const best = {
-          pn:           (e.hit && e.hit.pn)           || (e.cand && e.cand.pn)           || "",
-          mpn:          (e.hit && e.hit.mpn)          || (e.cand && e.cand.mpn)          || "",
-          manufacturer: (e.hit && e.hit.manufacturer) || (e.cand && e.cand.manufacturer) || "",
-          comId:        (e.hit && e.hit.comId)        || (e.cand && e.cand.comId)        || "",
-          source:       (e.hit && e.hit.source)       || (e.cand && e.cand.source)       || "",
-          reason:       (e.hit && e.hit.reason)       || (e.cand && e.cand.reason)       || "",
-        };
-        return mergeApiPart({ ...tpl, id, priceSeed: tpl.priceSeed+i },
-                            best, e.part, e.lifecycle, e.commercial, e.parametric,
-                            e.regulatory, e.chemicals, e.documents,
-                            e.packaging, e.countries);
-      });
-    }
-    return PARTS; // fallback to mock when no query / no hits
+    if(apiHits === null) return null;              // still fetching
+    if(!apiHits.length)   return [];               // no hits (empty-state banner handles messaging)
+    return apiHits.map((e, i)=>{
+      const tpl = PARTS[i % PARTS.length];
+      const id = e.hit.comId || e.hit.pn || `${i}`;
+      // Prefer the Excel-level hit fields over the detail's reverse-scan
+      // candidate stub (which may be empty when there's no ComID match in
+      // Excel). First-truthy wins per field.
+      const best = {
+        pn:           (e.hit && e.hit.pn)           || (e.cand && e.cand.pn)           || "",
+        mpn:          (e.hit && e.hit.mpn)          || (e.cand && e.cand.mpn)          || "",
+        manufacturer: (e.hit && e.hit.manufacturer) || (e.cand && e.cand.manufacturer) || "",
+        comId:        (e.hit && e.hit.comId)        || (e.cand && e.cand.comId)        || "",
+        source:       (e.hit && e.hit.source)       || (e.cand && e.cand.source)       || "",
+        reason:       (e.hit && e.hit.reason)       || (e.cand && e.cand.reason)       || "",
+      };
+      return mergeApiPart({ ...tpl, id, priceSeed: tpl.priceSeed+i },
+                          best, e.part, e.lifecycle, e.commercial, e.parametric,
+                          e.regulatory, e.chemicals, e.documents,
+                          e.packaging, e.countries);
+    });
   }, [apiHits]);
 
-  const shown = parts
+  const shown = (parts || [])
     .filter(p => lcFilter==="all" || p.lifecycle.toLowerCase()===lcFilter)
     .sort((a,b)=>{
       if(sort==="price") return a.price-b.price;
@@ -2134,6 +2220,7 @@ function ResultsScreen({ t, lang, go, query, bulk, pns }){
       if(sort==="risk")  return a.risk-b.risk;
       return 0;
     });
+  const loading = parts === null;
 
   return (
     <div style={{padding:"20px 28px 60px"}}>
@@ -2151,11 +2238,21 @@ function ResultsScreen({ t, lang, go, query, bulk, pns }){
           <span style={{fontSize:12.5, color:"var(--ink-3)"}}>{t.resultsFor}</span>
           <span style={{fontFamily:"'IBM Plex Mono', monospace", fontWeight:600, fontSize:13.5}}>{query}</span>
           <span style={{fontSize:11.5, color:"var(--ink-3)", fontFamily:"'IBM Plex Mono', monospace"}}>
-            · {t.showing} {shown.length} {t.of} {parts.length} {t.parts}
+            · {loading
+                ? (lang==="en" ? "loading…" : "載入中…")
+                : `${t.showing} ${shown.length} ${t.of} ${(parts||[]).length} ${t.parts}`}
           </span>
         </div>
-        <Btn variant="quiet" size="sm" icon={Ico.exp()}>{t.export}</Btn>
-        <Btn variant="quiet" size="sm" icon={Ico.star()}>{t.addWatch}</Btn>
+        <Btn variant="quiet" size="sm" icon={Ico.exp()}
+             onClick={()=>go({name:"export", q:query, bulk:!!bulk,
+                              pns: Array.isArray(pns)?pns:null})}>
+          {t.export}
+        </Btn>
+        <Btn variant="primary" size="sm" icon={Ico.diff()}
+             onClick={()=>go({name:"compare", q:query, bulk:!!bulk,
+                              pns: Array.isArray(pns)?pns:null})}>
+          {t.compare}
+        </Btn>
       </div>
 
       <div style={{display:"grid", gridTemplateColumns:"220px 1fr", gap:14}}>
@@ -2341,11 +2438,18 @@ function ResultsScreen({ t, lang, go, query, bulk, pns }){
             </div>
           )}
 
-          {/* Cards */}
-          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:14}}>
-            {shown.map(p=> <ResultCard key={p.id} p={p} t={t}
-              onOpen={()=>go({name:"detail", id:p.id, pn:p.advPN, mpn:p.mpn, mfr:p.mfr})}/>)}
-          </div>
+          {/* Cards — during loading show a progress indicator + skeleton
+              placeholders instead of mock cards. */}
+          {loading ? (
+            <ResultsLoading progress={progress} lang={lang}
+              isBulk={bulk && Array.isArray(pns) && pns.length > 0}
+              pnsCount={Array.isArray(pns) ? pns.length : 0}/>
+          ) : (
+            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:14}}>
+              {shown.map(p=> <ResultCard key={p.id} p={p} t={t}
+                onOpen={()=>go({name:"detail", id:p.id, pn:p.advPN, mpn:p.mpn, mfr:p.mfr})}/>)}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -2377,6 +2481,109 @@ function FilterRow({ label, count, checked, active, onClick, radio }){
       <span style={{flex:1}}>{label}</span>
       <span style={{color:"var(--ink-4)", fontFamily:"'IBM Plex Mono', monospace", fontSize:11}}>{count}</span>
     </button>
+  );
+}
+
+// Live progress + skeleton grid, shown while /api/search (or /api/bulk) and
+// the follow-up /api/detail enrichment are in flight. Replaces the previous
+// behaviour of rendering mock PARTS cards during load.
+function ResultsLoading({ progress, lang, isBulk, pnsCount }){
+  const { phase, done, total } = progress || { phase: "search", done: 0, total: 0 };
+  const pct = phase === "details" && total > 0
+    ? Math.round((done / total) * 100)
+    : null;
+  const headline = phase === "search"
+    ? (isBulk
+        ? (lang==="en"
+            ? `Looking up ${pnsCount} parts from SiliconExpert…`
+            : `正從 SiliconExpert 查詢 ${pnsCount} 筆料號…`)
+        : (lang==="en"
+            ? "Searching SiliconExpert…"
+            : "正在搜尋 SiliconExpert…"))
+    : (isBulk
+        ? (lang==="en"
+            ? `Downloading part details · ${done} / ${total}`
+            : `下載料號詳細資料 · ${done} / ${total}`)
+        : (lang==="en"
+            ? `Fetching part details · ${done} / ${total}`
+            : `擷取料號詳細資料 · ${done} / ${total}`));
+  const sub = phase === "search"
+    ? (lang==="en" ? "Resolving Advantech PN → SE_ComID…" : "解析 Advantech PN → SE_ComID…")
+    : (lang==="en"
+        ? "Enriching lifecycle, pricing, and risk…"
+        : "載入生命週期、價格與風險評級…");
+  return (
+    <div>
+      {/* Progress bar */}
+      <div style={{
+        background:"#fff", border:"1px solid var(--line)",
+        padding:"14px 18px", marginBottom:14,
+      }}>
+        <div style={{display:"flex", alignItems:"center", gap:12, marginBottom:10}}>
+          <span className="ci-spinner"/>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontSize:13, fontWeight:600, color:"var(--ink)"}}>{headline}</div>
+            <div style={{fontSize:11.5, color:"var(--ink-3)",
+                 fontFamily:"'IBM Plex Mono', monospace", marginTop:2}}>{sub}</div>
+          </div>
+          {pct !== null && (
+            <span style={{fontFamily:"'IBM Plex Mono', monospace", fontSize:13,
+                 fontWeight:600, color:"var(--ink-2)"}}>{pct}%</span>
+          )}
+        </div>
+        <div style={{
+          height:4, background:"var(--line)", borderRadius:2, overflow:"hidden",
+          position:"relative",
+        }}>
+          {pct !== null ? (
+            <div style={{
+              height:"100%", width:`${pct}%`, background:"var(--accent)",
+              transition:"width 0.2s ease-out",
+            }}/>
+          ) : (
+            <div className="ci-skeleton" style={{height:"100%", width:"100%"}}/>
+          )}
+        </div>
+      </div>
+
+      {/* Skeleton card grid — matches ResultCard layout so the transition
+          into real content has no layout jump. */}
+      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:14}}>
+        {Array.from({length: 4}).map((_, i)=>(
+          <div key={i} style={{background:"#fff", border:"1px solid var(--line)"}}>
+            <div style={{display:"flex", gap:14, padding:14,
+                 borderBottom:"1px solid var(--line)"}}>
+              <div className="ci-skeleton" style={{width:120, height:90}}/>
+              <div style={{flex:1, minWidth:0,
+                   display:"flex", flexDirection:"column", gap:8}}>
+                <div className="ci-skeleton" style={{height:10, width:"40%"}}/>
+                <div className="ci-skeleton" style={{height:14, width:"70%"}}/>
+                <div className="ci-skeleton" style={{height:10, width:"95%"}}/>
+                <div className="ci-skeleton" style={{height:10, width:"85%"}}/>
+                <div style={{display:"flex", gap:6, marginTop:4}}>
+                  <div className="ci-skeleton" style={{height:18, width:56, borderRadius:2}}/>
+                  <div className="ci-skeleton" style={{height:18, width:52, borderRadius:2}}/>
+                </div>
+              </div>
+            </div>
+            <div style={{display:"grid", gridTemplateColumns:"repeat(4, 1fr)",
+                 borderBottom:"1px solid var(--line)"}}>
+              {[0,1,2,3].map(j=>(
+                <div key={j} style={{padding:"10px 12px",
+                     borderRight: j<3?"1px solid var(--line)":"none",
+                     display:"flex", flexDirection:"column", gap:6}}>
+                  <div className="ci-skeleton" style={{height:9, width:"60%"}}/>
+                  <div className="ci-skeleton" style={{height:13, width:"45%"}}/>
+                </div>
+              ))}
+            </div>
+            <div style={{padding:"10px 14px"}}>
+              <div className="ci-skeleton" style={{height:24, width:"100%"}}/>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -2800,10 +3007,30 @@ function DetailScreen({ t, lang, go, id, routePN, routeMPN, routeMfr }){
         </div>
         <div style={{padding:18, display:"flex", flexDirection:"column", gap:10}}>
           <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:6}}>
-            <Btn variant="primary" icon={Ico.dl()} size="sm" block>{t.download}</Btn>
-            <Btn variant="default" icon={Ico.exp()} size="sm" block>{t.export}</Btn>
-            <Btn variant="default" icon={Ico.star()} size="sm" block>{t.addWatch}</Btn>
-            <Btn variant="default" icon={Ico.diff()} size="sm" block>{t.compare}</Btn>
+            <Btn variant="primary" icon={Ico.dl()} size="sm" block
+              onClick={()=>go({name:"download", q: part.advPN || part.mpn,
+                               bulk:false, pns:null,
+                               preselect: part.id, from:"detail"})}>
+              {t.download}
+            </Btn>
+            <Btn variant="default" icon={Ico.exp()} size="sm" block
+              onClick={()=>go({name:"export", q: part.advPN || part.mpn,
+                               bulk:false, pns:null,
+                               preselect: part.id, from:"detail"})}>
+              {t.export}
+            </Btn>
+            <Btn variant="default" icon={Ico.star()} size="sm" block
+              onClick={()=>go({name:"watch", q: part.advPN || part.mpn,
+                               bulk:false, pns:null,
+                               preselect: part.id, from:"detail"})}>
+              {t.addWatch}
+            </Btn>
+            <Btn variant="default" icon={Ico.diff()} size="sm" block
+              onClick={()=>go({name:"compare", q: part.advPN || part.mpn,
+                               bulk:false, pns:null,
+                               preselect: part.id, from:"detail"})}>
+              {t.compare}
+            </Btn>
           </div>
           <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", border:"1px solid var(--line)", marginTop:4}}>
             {typeof part.priceMin === "number" ? (
@@ -4785,12 +5012,6 @@ function PackagingData({ t, lang, p }){
         </div>
       </div>
 
-      <div style={{marginTop:10, fontSize:10.5, color:"var(--ink-4)",
-           fontFamily:"'IBM Plex Mono', monospace"}}>
-        {en
-          ? "Fields: ComID, PackagingSuffix, Packaging, QuantityOfPackaging, ReelDiameter, ReelWidth, TapePitch, TapeWidth, FeedHolePitch, HoleCenterToComponentCenter, LeadClinchHeight, ComponentOrientation, PackagingDocument, TapeMaterial, TapeType, SupplierPackage, PinCount, PCB, Tab, PackageDiameter, Mounting, PackageLength, PackageWidth, PackageHeight, PackageDescription, PackageMaterial, StandardPackageName, SeatedPlaneHeight, PinPitch, JEDEC, PackageOutline, PackageCase, LeadShape, BasicPackageType, PackageWeight, MinimumSeatedPlaneHeight, PackageOrientation"
-          : "欄位:ComID、PackagingSuffix、Packaging … (共 36 項)"}
-      </div>
     </Section>
   );
 }
@@ -4914,12 +5135,6 @@ function CountriesOfOrigin({ t, lang, p }){
         </table>
       </div>
 
-      <div style={{marginTop:10, fontSize:10.5, color:"var(--ink-4)",
-           fontFamily:"'IBM Plex Mono', monospace"}}>
-        {en
-          ? "Fields: ComID, Country, Source · Source: SummaryData.CountriesOfOrigin.CountryOfOrigin[]"
-          : "欄位:ComID、Country、Source · 來源:SummaryData.CountriesOfOrigin.CountryOfOrigin[]"}
-      </div>
     </Section>
   );
 }
@@ -5011,6 +5226,1487 @@ function Segment({ v, set, opts }){
 Object.assign(window, { TweaksPanel, TWEAK_DEFAULTS });
 
 
+/* ===== actions.babel.js ===== */
+// Download · Export · Watch · Compare — four dedicated action screens reached
+// from the Results page. Each shares a common fetch+enrich pipeline through
+// useSearchResults(), mirrors the ResultsScreen data model, and follows the
+// SiliconExpert / Mouser / Digi-Key design conventions: a compact header, a
+// two-pane layout (selection on the left, configuration / preview on the
+// right), and a clear primary action in the top right.
+
+// ---------- Shared hook: fetch + enrich results -----------------------------
+function useSearchResults({ query, bulk, pns }){
+  const [parts, setParts] = React.useState(null);     // null = loading
+  const [progress, setProgress] = React.useState({ phase:"search", done:0, total:0 });
+  const [bulkMeta, setBulkMeta] = React.useState(null);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(()=>{
+    let cancelled = false;
+    setParts(null); setError(null); setBulkMeta(null);
+    setProgress({ phase:"search", done:0, total:0 });
+    const hasBulk = bulk && Array.isArray(pns) && pns.length > 0;
+    if(!hasBulk && (!query || !query.trim())){ setParts([]); return; }
+    (async ()=>{
+      try {
+        let hits = [];
+        if(hasBulk){
+          const res = await API.bulk(pns);
+          if(cancelled) return;
+          setBulkMeta({
+            total: res.total || pns.length,
+            limit: res.limit || 50,
+            truncated: !!res.truncated,
+            missing: Array.isArray(res.missing) ? res.missing : [],
+          });
+          hits = Array.isArray(res.hits) ? res.hits : [];
+        } else {
+          const res = await API.search(query);
+          if(cancelled) return;
+          hits = Array.isArray(res.hits) ? res.hits : [];
+        }
+        if(!cancelled) setProgress({ phase:"details", done:0, total:hits.length });
+        const enriched = await Promise.all(hits.map(async h => {
+          try {
+            if(!h.comId && !h.pn) return { hit: h };
+            const d = await API.detail(h.comId ? { comId: h.comId } : { pn: h.pn });
+            return { hit: h, part: d?.part, lifecycle: d?.lifecycle,
+                     commercial: d?.commercial, parametric: d?.parametric,
+                     regulatory: d?.regulatory, chemicals: d?.chemicals,
+                     documents: d?.documents, packaging: d?.packaging,
+                     countries: d?.countries, cand: d?.raw?.candidate, raw: d };
+          } catch { return { hit: h }; }
+          finally {
+            if(!cancelled) setProgress(p => ({ ...p, done: p.done + 1 }));
+          }
+        }));
+        if(cancelled) return;
+        const mapped = enriched.map((e, i)=>{
+          const tpl = PARTS[i % PARTS.length];
+          const id = e.hit.comId || e.hit.pn || `${i}`;
+          const best = {
+            pn:           (e.hit && e.hit.pn)           || (e.cand && e.cand.pn)           || "",
+            mpn:          (e.hit && e.hit.mpn)          || (e.cand && e.cand.mpn)          || "",
+            manufacturer: (e.hit && e.hit.manufacturer) || (e.cand && e.cand.manufacturer) || "",
+            comId:        (e.hit && e.hit.comId)        || (e.cand && e.cand.comId)        || "",
+            source:       (e.hit && e.hit.source)       || (e.cand && e.cand.source)       || "",
+            reason:       (e.hit && e.hit.reason)       || (e.cand && e.cand.reason)       || "",
+          };
+          const merged = mergeApiPart({ ...tpl, id, priceSeed: tpl.priceSeed+i },
+                                      best, e.part, e.lifecycle, e.commercial, e.parametric,
+                                      e.regulatory, e.chemicals, e.documents,
+                                      e.packaging, e.countries);
+          merged.__raw = e;
+          return merged;
+        });
+        setParts(mapped);
+      } catch(err){ if(!cancelled){ setError(String(err)); setParts([]); } }
+    })();
+    return ()=>{ cancelled = true; };
+  }, [query, bulk, Array.isArray(pns) ? pns.join("|") : ""]);
+
+  return { parts, progress, bulkMeta, error, loading: parts === null };
+}
+
+// ---------- Shared bits --------------------------------------------------
+const REPORT_SECTIONS = [
+  ["overview",   "Overview",          "總覽"],
+  ["lifecycle",  "Lifecycle & Risk",  "生命週期與風險"],
+  ["xref",       "Cross Reference",   "交叉參考"],
+  ["pricing",    "Pricing & Stock",   "價格與庫存"],
+  ["compliance", "Compliance",        "法規符合"],
+  ["documents",  "Documents",         "文件"],
+  ["packaging",  "Packaging Data",    "封裝資料"],
+  ["countries",  "Countries of Origin","原產地"],
+];
+
+function ActionShell({ t, lang, go, route, title, subtitle, primary, children }){
+  const backLabel = lang==="en" ? "Back to results" : "返回結果";
+  return (
+    <div style={{padding:"20px 28px 60px"}}>
+      <div style={{
+        display:"flex", alignItems:"center", gap:12,
+        padding:"12px 16px", background:"#fff", border:"1px solid var(--line)", marginBottom:14,
+      }}>
+        <button onClick={()=>go({
+          name:"results", q: route.q, bulk: route.bulk, pns: route.pns,
+        })} style={{
+          background:"transparent", border:"1px solid var(--line-2)",
+          padding:"5px 10px", borderRadius:2, fontSize:12, color:"var(--ink-2)",
+          display:"flex", alignItems:"center", gap:6,
+        }}>{Ico.arrow(11,"left")} {backLabel}</button>
+        <div style={{flex:1, display:"flex", flexDirection:"column", gap:2}}>
+          <div style={{fontSize:13, fontWeight:600, letterSpacing:"-0.005em"}}>{title}</div>
+          {subtitle && <div style={{fontSize:11.5, color:"var(--ink-3)",
+               fontFamily:"'IBM Plex Mono', monospace"}}>{subtitle}</div>}
+        </div>
+        {primary}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function PartChecklist({ lang, parts, selected, setSelected, max, title }){
+  const en = lang === "en";
+  const cap = typeof max === "number" ? max : null;
+  const toggle = id => {
+    setSelected(s => {
+      const on = s.includes(id);
+      if(on) return s.filter(x => x !== id);
+      if(cap !== null && s.length >= cap) return s; // enforce cap
+      return [...s, id];
+    });
+  };
+  const all = ()=>setSelected(parts.map(p=>p.id).slice(0, cap||undefined));
+  const none = ()=>setSelected([]);
+  return (
+    <div style={{background:"#fff", border:"1px solid var(--line)"}}>
+      <div style={{
+        padding:"10px 14px", borderBottom:"1px solid var(--line)",
+        display:"flex", alignItems:"center", gap:10,
+        fontSize:11, fontFamily:"'IBM Plex Mono', monospace",
+        letterSpacing:"0.12em", textTransform:"uppercase", color:"var(--ink-3)",
+      }}>
+        <span style={{flex:1}}>{title || (en?"Components":"零件")}</span>
+        <span style={{color:"var(--ink-4)", letterSpacing:"0.04em",
+             textTransform:"none"}}>
+          {selected.length}{cap!==null?`/${cap}`:""} · {parts.length}
+        </span>
+        {!cap && <button onClick={all} style={{background:"transparent",
+             border:"none", fontSize:11, color:"var(--accent-ink)",
+             cursor:"pointer", padding:0}}>
+          {en?"All":"全選"}
+        </button>}
+        <button onClick={none} style={{background:"transparent",
+             border:"none", fontSize:11, color:"var(--ink-3)",
+             cursor:"pointer", padding:0}}>
+          {en?"None":"清除"}
+        </button>
+      </div>
+      <div style={{maxHeight:460, overflow:"auto"}}>
+        {parts.map(p=>{
+          const on = selected.includes(p.id);
+          const atCap = cap !== null && !on && selected.length >= cap;
+          return (
+            <label key={p.id} style={{
+              display:"flex", alignItems:"flex-start", gap:10,
+              padding:"10px 14px", borderBottom:"1px dashed var(--line)",
+              cursor: atCap?"not-allowed":"pointer",
+              opacity: atCap ? 0.45 : 1,
+            }}>
+              <input type="checkbox" checked={on} disabled={atCap}
+                     onChange={()=>toggle(p.id)}
+                     style={{marginTop:3, accentColor:"var(--accent)"}}/>
+              <div style={{flex:1, minWidth:0}}>
+                <div style={{display:"flex", gap:8, alignItems:"baseline"}}>
+                  <span style={{fontFamily:"'IBM Plex Mono', monospace",
+                       fontWeight:600, fontSize:12.5}}>{p.mpn}</span>
+                  <span style={{fontSize:10.5, color:"var(--ink-4)",
+                       fontFamily:"'IBM Plex Mono', monospace",
+                       letterSpacing:"0.06em", textTransform:"uppercase"}}>
+                    {p.mfr}
+                  </span>
+                </div>
+                <div style={{fontSize:11.5, color:"var(--ink-3)",
+                     fontFamily:"'IBM Plex Mono', monospace", marginTop:2}}>
+                  {p.advPN || "—"}
+                </div>
+                <div style={{fontSize:12, color:"var(--ink-2)",
+                     marginTop:3, overflow:"hidden", textOverflow:"ellipsis",
+                     whiteSpace:"nowrap"}}>{p.desc}</div>
+                <div style={{display:"flex", gap:6, marginTop:6, flexWrap:"wrap"}}>
+                  <Pill tone={lifecycleTone(p.lifecycle)}>
+                    <Dot tone={lifecycleTone(p.lifecycle)}/>{p.lifecycle}
+                  </Pill>
+                  <Pill>{(p.yeol||0).toFixed(1)}y</Pill>
+                  <Pill tone={riskTone(p.risk)}>{p.risk.toFixed(0)}% risk</Pill>
+                </div>
+              </div>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SectionChecklist({ lang, selected, setSelected, title }){
+  const en = lang === "en";
+  const toggle = k => setSelected(s => s.includes(k)
+    ? s.filter(x=>x!==k) : [...s, k]);
+  const all = ()=>setSelected(REPORT_SECTIONS.map(([k])=>k));
+  const none = ()=>setSelected([]);
+  return (
+    <div style={{background:"#fff", border:"1px solid var(--line)"}}>
+      <div style={{
+        padding:"10px 14px", borderBottom:"1px solid var(--line)",
+        display:"flex", alignItems:"center", gap:10,
+        fontSize:11, fontFamily:"'IBM Plex Mono', monospace",
+        letterSpacing:"0.12em", textTransform:"uppercase", color:"var(--ink-3)",
+      }}>
+        <span style={{flex:1}}>{title || (en?"Sections":"章節")}</span>
+        <button onClick={all} style={{background:"transparent",
+             border:"none", fontSize:11, color:"var(--accent-ink)",
+             cursor:"pointer", padding:0}}>
+          {en?"All":"全選"}
+        </button>
+        <button onClick={none} style={{background:"transparent",
+             border:"none", fontSize:11, color:"var(--ink-3)",
+             cursor:"pointer", padding:0}}>
+          {en?"None":"清除"}
+        </button>
+      </div>
+      <div>
+        {REPORT_SECTIONS.map(([k,en_,zh_],i)=>{
+          const on = selected.includes(k);
+          return (
+            <label key={k} style={{
+              display:"flex", alignItems:"center", gap:10,
+              padding:"9px 14px", borderBottom:"1px dashed var(--line)",
+              cursor:"pointer",
+            }}>
+              <input type="checkbox" checked={on}
+                     onChange={()=>toggle(k)}
+                     style={{accentColor:"var(--accent)"}}/>
+              <span style={{flex:1, fontSize:12.5}}>{en?en_:zh_}</span>
+              <span style={{fontSize:10, color:"var(--ink-4)",
+                   fontFamily:"'IBM Plex Mono', monospace"}}>
+                {String(i+1).padStart(2,"0")}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------- DownloadScreen (PDF) ----------------------------------------
+function DownloadScreen({ t, lang, go, route }){
+  const en = lang === "en";
+  const { parts, loading, progress } = useSearchResults({
+    query: route.q, bulk: !!route.bulk, pns: route.pns,
+  });
+  const real = parts || [];
+  const [selParts, setSelParts] = React.useState([]);
+  const [selSecs, setSelSecs]   = React.useState(
+    REPORT_SECTIONS.map(([k])=>k)
+  );
+  const [pageSize, setPageSize] = React.useState("A4");     // A4 | Letter
+  const [detail, setDetail]     = React.useState("full");   // full | summary
+  const [cover, setCover]       = React.useState(true);
+
+  React.useEffect(()=>{
+    if(!loading && !selParts.length && real.length){
+      setSelParts(real.map(p=>p.id));
+    }
+  }, [loading, real.length]);
+
+  const chosen = real.filter(p => selParts.includes(p.id));
+  const pageCount = (cover?1:0) + chosen.length * selSecs.length;
+  const fileName = `siliconexpert-report-${new Date().toISOString().slice(0,10)}.pdf`;
+
+  const triggerPrint = () => {
+    if(!chosen.length){
+      alert(en ? "Select at least one component." : "請至少選擇一筆零件。");
+      return;
+    }
+    const html = buildReportHtml({
+      parts: chosen, sections: selSecs,
+      cover, pageSize, detail, lang,
+    });
+    openPrintWindow(html, en
+      ? "Generating PDF — allow pop-ups if nothing appears."
+      : "正在產生 PDF,若未開啟請允許快顯視窗。");
+  };
+
+  const primary = (
+    <Btn variant="primary" icon={Ico.dl()}
+         onClick={triggerPrint}>
+      {en ? "Generate PDF" : "產生 PDF"}
+    </Btn>
+  );
+
+  return (
+    <ActionShell t={t} lang={lang} go={go} route={route}
+      title={en ? "Download · PDF report" : "下載 · PDF 報告"}
+      subtitle={en
+        ? `${chosen.length} components · ${selSecs.length} sections · ~${pageCount} pages · ${pageSize}`
+        : `已選 ${chosen.length} 筆 · ${selSecs.length} 章節 · 約 ${pageCount} 頁 · ${pageSize}`}
+      primary={primary}>
+
+      {loading ? (
+        <ResultsLoading progress={progress} lang={lang}
+          isBulk={!!route.bulk}
+          pnsCount={Array.isArray(route.pns)?route.pns.length:0}/>
+      ) : (
+        <div style={{display:"grid", gridTemplateColumns:"1.1fr 1fr 1fr", gap:14}}>
+          <PartChecklist lang={lang} parts={real}
+            selected={selParts} setSelected={setSelParts}
+            title={en?"Components":"零件"}/>
+          <SectionChecklist lang={lang}
+            selected={selSecs} setSelected={setSelSecs}
+            title={en?"Report sections":"章節"}/>
+          <div style={{background:"#fff", border:"1px solid var(--line)"}}>
+            <div style={{padding:"10px 14px", borderBottom:"1px solid var(--line)",
+                 fontSize:11, fontFamily:"'IBM Plex Mono', monospace",
+                 letterSpacing:"0.12em", textTransform:"uppercase",
+                 color:"var(--ink-3)"}}>
+              {en?"Report settings":"報告設定"}
+            </div>
+            <div style={{padding:"12px 14px", display:"flex",
+                 flexDirection:"column", gap:14}}>
+              <ReportOption
+                label={en?"Page size":"頁面大小"}
+                options={[["A4","A4"],["Letter","Letter"]]}
+                value={pageSize} onChange={setPageSize}/>
+              <ReportOption
+                label={en?"Detail level":"內容詳盡度"}
+                options={[["full",en?"Full":"完整"],["summary",en?"Summary":"摘要"]]}
+                value={detail} onChange={setDetail}/>
+              <label style={{display:"flex", alignItems:"center", gap:8,
+                   fontSize:12.5, cursor:"pointer"}}>
+                <input type="checkbox" checked={cover}
+                       onChange={e=>setCover(e.target.checked)}
+                       style={{accentColor:"var(--accent)"}}/>
+                {en?"Include cover page":"包含封面頁"}
+              </label>
+              <div style={{padding:"10px 12px", background:"var(--surface)",
+                   border:"1px solid var(--line)",
+                   fontFamily:"'IBM Plex Mono', monospace", fontSize:11,
+                   color:"var(--ink-3)", lineHeight:1.6}}>
+                <div><b style={{color:"var(--ink)"}}>File:</b> {fileName}</div>
+                <div><b style={{color:"var(--ink)"}}>Pages:</b> {pageCount}</div>
+                <div><b style={{color:"var(--ink)"}}>Data source:</b> SiliconExpert /partDetail</div>
+                <div style={{marginTop:6}}>
+                  {en ? "Uses your browser's “Save as PDF” destination."
+                      : "使用瀏覽器的「另存為 PDF」。"}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </ActionShell>
+  );
+}
+
+function ReportOption({ label, options, value, onChange }){
+  return (
+    <div style={{display:"flex", flexDirection:"column", gap:6}}>
+      <div style={{fontSize:10.5, color:"var(--ink-4)",
+           fontFamily:"'IBM Plex Mono', monospace",
+           letterSpacing:"0.12em", textTransform:"uppercase"}}>{label}</div>
+      <div style={{display:"flex", border:"1px solid var(--line-strong)"}}>
+        {options.map(([k,l],i)=>(
+          <button key={k} onClick={()=>onChange(k)} style={{
+            flex:1, padding:"6px 10px", fontSize:12,
+            background: value===k?"#14161a":"#fff",
+            color:    value===k?"#fff":"var(--ink-2)",
+            border:"none", borderLeft: i>0?"1px solid var(--line-strong)":"none",
+          }}>{l}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------- PDF generation (opens a new window with a full HTML document
+// and calls print() on it — avoids the inline-style vs @media-print specificity
+// trap and works identically across Chromium/Firefox/Safari). ----------
+function pdfSectionKv(p, sec, lang, detail){
+  const en = lang === "en";
+  const kv = [];
+  if(sec === "overview"){
+    kv.push(["MPN", p.mpn], [en?"Advantech P/N":"研華料號", p.advPN || "—"],
+            [en?"Manufacturer":"製造商", p.mfr],
+            [en?"Category":"類別", p.category],
+            [en?"Description":"描述", p.desc],
+            [en?"Lifecycle":"生命週期", p.lifecycle]);
+  } else if(sec === "lifecycle"){
+    kv.push([en?"Lifecycle stage":"生命週期階段", p.lifecycleStage || p.lifecycle],
+            [en?"Estimated EOL":"預估停產日", p.eolDate || "—"],
+            [en?"Years to EOL":"EOL 年限", (p.yeol||0).toFixed(1) + "y"],
+            [en?"Overall risk":"整體風險", p.risk.toFixed(0) + "%"],
+            [en?"Resilience":"韌性", typeof p.resilience === "number"
+               ? p.resilience.toFixed(1)+" / 10" : "—"]);
+  } else if(sec === "xref"){
+    kv.push([en?"Crosses available":"替代料號", p.crossesAvailable || "—"],
+            [en?"Other sources":"其他來源數", typeof p.otherSources === "number"
+               ? String(p.otherSources) : "—"]);
+  } else if(sec === "pricing"){
+    kv.push([en?"Min unit price":"最低單價", typeof p.priceMin === "number"
+               ? "$" + p.priceMin.toFixed(4) : "—"],
+            [en?"Avg unit price":"平均單價", typeof p.priceAvg === "number"
+               ? "$" + p.priceAvg.toFixed(4) : "—"],
+            [en?"Total inventory":"總庫存", typeof p.totalInventory === "number"
+               ? p.totalInventory.toLocaleString() : "—"],
+            [en?"Distributors with stock":"有庫存通路", typeof p.distributorsWithStock === "number"
+               ? String(p.distributorsWithStock) : "—"]);
+  } else if(sec === "compliance"){
+    kv.push(["RoHS", p.rohs ? (en?"Yes":"是") : (en?"No":"否")],
+            ["REACH", p.reach ? (en?"Yes":"是") : (en?"No":"否")],
+            ["CE", p.ce ? (en?"Yes":"是") : (en?"No":"否")]);
+  } else if(sec === "documents"){
+    const docs = Array.isArray(p.documents) ? p.documents : [];
+    kv.push([en?"Document count":"文件數量", String(docs.length)]);
+    docs.slice(0, detail==="summary"?3:12).forEach((d,i)=>
+      kv.push([`${en?"Doc":"文件"} ${i+1}`, d.name || d.url || "—"]));
+  } else if(sec === "packaging"){
+    const pkg = p.packaging || {};
+    kv.push([en?"Package":"封裝", pkg.packaging || "—"],
+            [en?"Qty per packaging":"每包數量", pkg.qtyPerPackaging || "—"],
+            [en?"Reel diameter":"捲盤直徑", pkg.reelDiameter || "—"],
+            ["JEDEC", pkg.jedec || "—"],
+            [en?"Mounting":"安裝方式", pkg.mounting || "—"]);
+  } else if(sec === "countries"){
+    const cs = Array.isArray(p.countries) ? p.countries : [];
+    kv.push([en?"Country count":"國家數", String(cs.length)]);
+    cs.slice(0, detail==="summary"?3:10).forEach((c,i)=>
+      kv.push([`${en?"Country":"國家"} ${i+1}`, c.country || c.name || String(c)]));
+  }
+  return kv;
+}
+
+function htmlEscape(s){
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function buildReportHtml({ parts, sections, cover, pageSize, detail, lang }){
+  const en = lang === "en";
+  const today = new Date().toISOString().slice(0,10);
+  const size = pageSize === "Letter" ? "8.5in 11in" : "A4";
+  const sectionTitle = sec => {
+    const r = REPORT_SECTIONS.find(x=>x[0]===sec);
+    return r ? (en ? r[1] : r[2]) : sec;
+  };
+
+  const coverPage = cover ? `
+    <section class="page cover">
+      <div class="kicker">Component Intelligence · Advantech</div>
+      <h1>${en?"Part dossier":"料號報告"}</h1>
+      <div class="meta">
+        ${en?"Generated":"產生日期"}: ${today}
+        · ${parts.length} ${en?"components":"筆零件"}
+        · ${sections.length} ${en?"sections":"章節"}
+      </div>
+      <div class="rule"></div>
+      <table class="cover-list"><tbody>
+        ${parts.map(p=>`
+          <tr>
+            <td class="k">${htmlEscape(p.mpn)}</td>
+            <td class="v">${htmlEscape(p.mfr)}</td>
+            <td class="v mono">${htmlEscape(p.advPN || "—")}</td>
+            <td class="v">${htmlEscape(p.lifecycle || "—")}</td>
+          </tr>`).join("")}
+      </tbody></table>
+      <div class="footer">
+        <span>SiliconExpert ProductAPI · partDetail / xref / pcn</span>
+        <span>${today}</span>
+      </div>
+    </section>` : "";
+
+  const sectionPages = parts.map(p =>
+    sections.map(sec => {
+      const kv = pdfSectionKv(p, sec, lang, detail);
+      return `
+    <section class="page">
+      <div class="kicker">${htmlEscape(p.mpn)} · ${htmlEscape(p.mfr)} · ${htmlEscape(p.advPN || "—")}</div>
+      <h2>${htmlEscape(sectionTitle(sec))}</h2>
+      <div class="rule"></div>
+      <table class="kv"><tbody>
+        ${kv.map(([k,v])=>`
+          <tr>
+            <td class="k">${htmlEscape(k)}</td>
+            <td class="v">${htmlEscape(v)}</td>
+          </tr>`).join("")}
+      </tbody></table>
+      <div class="footer">
+        <span>${today}</span>
+        <span>${htmlEscape(p.mpn)} · ${htmlEscape(sectionTitle(sec))}</span>
+      </div>
+    </section>`;
+    }).join("")
+  ).join("");
+
+  return `<!doctype html>
+<html lang="${en?"en":"zh-TW"}">
+<head>
+<meta charset="utf-8">
+<title>${en?"Part dossier":"料號報告"} — ${today}</title>
+<style>
+  @page { size: ${size}; margin: 18mm 16mm; }
+  html, body { margin: 0; padding: 0; background: #fff; color: #111;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Noto Sans TC", sans-serif;
+    font-size: 11pt; line-height: 1.5;
+  }
+  .mono, .k { font-family: "IBM Plex Mono", "Menlo", "Consolas", monospace; }
+  .page { position: relative; page-break-after: always; padding: 6mm 2mm 18mm; min-height: calc(100vh - 36mm); }
+  .page:last-child { page-break-after: auto; }
+  .kicker { font-family: "IBM Plex Mono", monospace; font-size: 9pt;
+    letter-spacing: 0.18em; text-transform: uppercase; color: #666; }
+  h1 { font-size: 28pt; font-weight: 700; margin: 10pt 0 4pt; letter-spacing: -0.005em; }
+  h2 { font-size: 20pt; font-weight: 700; margin: 6pt 0 0; letter-spacing: -0.005em; }
+  .meta { font-size: 11pt; color: #555; margin-top: 4pt; }
+  .rule { height: 1px; background: #d0d0d0; margin: 14pt 0; }
+  table.kv, table.cover-list { width: 100%; border-collapse: collapse; }
+  table.kv td, table.cover-list td { padding: 7pt 8pt; vertical-align: top;
+    border-bottom: 1px solid #eee; font-size: 11pt; }
+  table.kv td.k, table.cover-list td.k { color: #555; font-size: 10pt;
+    font-family: "IBM Plex Mono", monospace; width: 38%; }
+  table.cover-list td { font-size: 10pt; }
+  .footer { position: absolute; left: 2mm; right: 2mm; bottom: 6mm;
+    display: flex; justify-content: space-between;
+    font-family: "IBM Plex Mono", monospace; font-size: 8pt; color: #999; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+${coverPage}
+${sectionPages}
+<script>
+  // Auto-trigger the browser's print dialog once the document is painted.
+  window.addEventListener("load", () => { setTimeout(() => window.print(), 150); });
+<\/script>
+</body>
+</html>`;
+}
+
+function buildCompareHtml({ cols, group, lang }){
+  const en = lang === "en";
+  const today = new Date().toISOString().slice(0,10);
+  const rows = compareRows(cols, group, en);
+  return `<!doctype html>
+<html lang="${en?"en":"zh-TW"}">
+<head>
+<meta charset="utf-8">
+<title>${en?"Comparison":"比較"} — ${today}</title>
+<style>
+  @page { size: A4 landscape; margin: 14mm 12mm; }
+  html, body { margin: 0; padding: 0; background: #fff; color: #111;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Noto Sans TC", sans-serif;
+    font-size: 10pt; }
+  .kicker { font-family: "IBM Plex Mono", monospace; font-size: 9pt;
+    letter-spacing: 0.18em; text-transform: uppercase; color: #666; }
+  h1 { font-size: 20pt; font-weight: 700; margin: 4pt 0 2pt; }
+  .meta { font-size: 10pt; color: #555; margin-bottom: 12pt; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 7pt 9pt; text-align: left; vertical-align: top;
+    border-bottom: 1px solid #eee; }
+  th { background: #f5f3ec; font-weight: 600; font-size: 10pt; }
+  th .mfr { font-family: "IBM Plex Mono", monospace; font-size: 8.5pt;
+    color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+  th .mpn { font-family: "IBM Plex Mono", monospace; font-size: 12pt;
+    font-weight: 700; margin-top: 2pt; }
+  td.k { color: #555; font-family: "IBM Plex Mono", monospace; font-size: 9.5pt; width: 170pt; }
+  td.best { background: #eaf4ed; color: #23603c; font-weight: 600; }
+  td.worst { background: #fbeeea; color: #8a2414; }
+  tr.group td { background: #fbfaf6; color: #666; font-size: 9pt;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    font-family: "IBM Plex Mono", monospace; border-bottom: 1px solid #ddd; }
+</style>
+</head>
+<body>
+  <div class="kicker">Component Intelligence · Advantech</div>
+  <h1>${en?"Side-by-side comparison":"並列比較"}</h1>
+  <div class="meta">${today} · ${cols.length} ${en?"components":"筆零件"}</div>
+  <table>
+    <thead>
+      <tr>
+        <th>${en?"Attribute":"屬性"}</th>
+        ${cols.map(c=>`<th>
+          <div class="mfr">${htmlEscape(c.mfr)}</div>
+          <div class="mpn">${htmlEscape(c.mpn)}</div>
+        </th>`).join("")}
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map(r => {
+        if(r.id.startsWith("g-")){
+          return `<tr class="group"><td colspan="${cols.length+1}">${htmlEscape(r.label)}</td></tr>`;
+        }
+        const nums = r.numeric ? r.values.map(v => {
+          const m = typeof v === "string" ? v.replace(/[^-0-9.]/g,"") : "";
+          return m ? parseFloat(m) : NaN;
+        }) : [];
+        const valid = nums.filter(n=>!Number.isNaN(n));
+        const lowerBetter = r.numeric === "lowerBetter";
+        const best = valid.length ? (lowerBetter ? Math.min(...valid) : Math.max(...valid)) : null;
+        const worst = valid.length ? (lowerBetter ? Math.max(...valid) : Math.min(...valid)) : null;
+        return `<tr>
+          <td class="k">${htmlEscape(r.label)}</td>
+          ${r.values.map((v,j)=>{
+            let cls = "";
+            if(r.numeric && !Number.isNaN(nums[j]) && best !== worst){
+              if(nums[j] === best) cls = " best";
+              else if(nums[j] === worst) cls = " worst";
+            }
+            return `<td class="v${cls}">${htmlEscape(v ?? "—")}</td>`;
+          }).join("")}
+        </tr>`;
+      }).join("")}
+    </tbody>
+  </table>
+<script>
+  window.addEventListener("load", () => { setTimeout(() => window.print(), 150); });
+<\/script>
+</body>
+</html>`;
+}
+
+function openPrintWindow(html, fallbackMsg){
+  const w = window.open("", "_blank", "width=1024,height=1400,noopener=no");
+  if(!w){
+    alert(fallbackMsg || "Please allow pop-ups to generate the PDF.");
+    return null;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  // Best-effort: focus the window so the print dialog surfaces.
+  try { w.focus(); } catch {}
+  return w;
+}
+
+// ---------- ExportScreen (JSON) ---------------------------------------
+function ExportScreen({ t, lang, go, route }){
+  const en = lang === "en";
+  const { parts, loading, progress } = useSearchResults({
+    query: route.q, bulk: !!route.bulk, pns: route.pns,
+  });
+  const real = parts || [];
+  const [selParts, setSelParts] = React.useState([]);
+  const [selSecs, setSelSecs]   = React.useState(
+    REPORT_SECTIONS.map(([k])=>k)
+  );
+  const [pretty, setPretty]     = React.useState(true);
+  const [includeRaw, setRaw]    = React.useState(false);
+  const [schema, setSchema]     = React.useState("advantech"); // advantech | se-flat
+  const [copied, setCopied]     = React.useState(false);
+
+  React.useEffect(()=>{
+    if(!loading && !selParts.length && real.length){
+      setSelParts(real.map(p=>p.id));
+    }
+  }, [loading, real.length]);
+
+  const payload = React.useMemo(()=>{
+    const chosen = real.filter(p => selParts.includes(p.id));
+    const pickSections = (p) => {
+      const out = {};
+      if(selSecs.includes("overview"))   out.overview   = {
+        mpn:p.mpn, advantechPn:p.advPN, manufacturer:p.mfr,
+        category:p.category, description:p.desc, lifecycle:p.lifecycle };
+      if(selSecs.includes("lifecycle"))  out.lifecycle  = {
+        stage:p.lifecycleStage || p.lifecycle, eolDate:p.eolDate,
+        yearsToEol:p.yeol, riskPct:p.risk,
+        resilience:p.resilience, resilienceGrade:p.resilienceGrade };
+      if(selSecs.includes("xref"))       out.crossReference = {
+        crossesAvailable:p.crossesAvailable, otherSources:p.otherSources };
+      if(selSecs.includes("pricing"))    out.pricingAndStock = {
+        minUnitPrice:p.priceMin, avgUnitPrice:p.priceAvg,
+        totalInventory:p.totalInventory,
+        distributorsWithStock:p.distributorsWithStock };
+      if(selSecs.includes("compliance")) out.compliance = {
+        rohs:!!p.rohs, reach:!!p.reach, ce:!!p.ce };
+      if(selSecs.includes("documents"))  out.documents = p.documents || [];
+      if(selSecs.includes("packaging"))  out.packaging = p.packaging || null;
+      if(selSecs.includes("countries"))  out.countriesOfOrigin = p.countries || [];
+      if(includeRaw && p.__raw)          out._raw = p.__raw;
+      return out;
+    };
+    if(schema === "se-flat"){
+      return { generatedAt: new Date().toISOString(),
+               source:"SiliconExpert /partDetail",
+               parts: chosen.map(p => ({ comId:p.comId, mpn:p.mpn,
+                 manufacturer:p.mfr, ...pickSections(p) })) };
+    }
+    return {
+      generatedAt: new Date().toISOString(),
+      generator: "Advantech Component Intelligence",
+      query: route.q || null,
+      bulk: !!route.bulk,
+      count: chosen.length,
+      parts: chosen.map(p => ({
+        id: p.id, comId: p.comId, mpn: p.mpn, advantechPn: p.advPN,
+        manufacturer: p.mfr, ...pickSections(p),
+      })),
+    };
+  }, [real, selParts, selSecs, pretty, includeRaw, schema, route.q, route.bulk]);
+
+  const json = React.useMemo(
+    ()=>JSON.stringify(payload, null, pretty ? 2 : 0),
+    [payload, pretty]
+  );
+  const bytes = new Blob([json]).size;
+  const fileName = `siliconexpert-${new Date().toISOString().slice(0,10)}.json`;
+
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(json);
+      setCopied(true); setTimeout(()=>setCopied(false), 1500);
+    } catch {}
+  };
+  const download = () => {
+    const blob = new Blob([json], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = fileName; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  };
+
+  const primary = (
+    <div style={{display:"flex", gap:6}}>
+      <Btn variant="quiet" size="sm" onClick={copy}>
+        {copied ? (en?"Copied ✓":"已複製 ✓") : (en?"Copy":"複製")}
+      </Btn>
+      <Btn variant="primary" icon={Ico.exp()} onClick={download}>
+        {en ? "Download JSON" : "下載 JSON"}
+      </Btn>
+    </div>
+  );
+
+  return (
+    <ActionShell t={t} lang={lang} go={go} route={route}
+      title={en ? "Export · JSON payload" : "匯出 · JSON 資料"}
+      subtitle={en
+        ? `${selParts.length} components · ${selSecs.length} fields · ${(bytes/1024).toFixed(1)} kB`
+        : `已選 ${selParts.length} 筆 · ${selSecs.length} 欄位 · ${(bytes/1024).toFixed(1)} kB`}
+      primary={primary}>
+
+      {loading ? (
+        <ResultsLoading progress={progress} lang={lang}
+          isBulk={!!route.bulk}
+          pnsCount={Array.isArray(route.pns)?route.pns.length:0}/>
+      ) : (
+        <div style={{display:"grid", gridTemplateColumns:"320px 280px 1fr", gap:14}}>
+          <PartChecklist lang={lang} parts={real}
+            selected={selParts} setSelected={setSelParts}
+            title={en?"Components":"零件"}/>
+          <div style={{display:"flex", flexDirection:"column", gap:14}}>
+            <SectionChecklist lang={lang}
+              selected={selSecs} setSelected={setSelSecs}
+              title={en?"Fields":"欄位"}/>
+            <div style={{background:"#fff", border:"1px solid var(--line)",
+                 padding:"12px 14px", display:"flex", flexDirection:"column",
+                 gap:12}}>
+              <ReportOption
+                label={en?"Schema":"格式"}
+                options={[["advantech",en?"Advantech":"研華"],["se-flat","SE-flat"]]}
+                value={schema} onChange={setSchema}/>
+              <label style={{display:"flex", alignItems:"center", gap:8,
+                   fontSize:12.5, cursor:"pointer"}}>
+                <input type="checkbox" checked={pretty}
+                       onChange={e=>setPretty(e.target.checked)}
+                       style={{accentColor:"var(--accent)"}}/>
+                {en?"Pretty-print (2-space)":"美化 (2 空格)"}
+              </label>
+              <label style={{display:"flex", alignItems:"center", gap:8,
+                   fontSize:12.5, cursor:"pointer"}}>
+                <input type="checkbox" checked={includeRaw}
+                       onChange={e=>setRaw(e.target.checked)}
+                       style={{accentColor:"var(--accent)"}}/>
+                {en?"Include raw SiliconExpert response":"包含 SiliconExpert 原始回應"}
+              </label>
+            </div>
+          </div>
+          <div style={{background:"#fff", border:"1px solid var(--line)",
+               display:"flex", flexDirection:"column",
+               minHeight: 500, maxHeight: 680,
+          }}>
+            <div style={{padding:"10px 14px", borderBottom:"1px solid var(--line)",
+                 display:"flex", alignItems:"center", gap:10,
+                 fontSize:11, fontFamily:"'IBM Plex Mono', monospace",
+                 letterSpacing:"0.12em", textTransform:"uppercase",
+                 color:"var(--ink-3)"}}>
+              <span style={{flex:1}}>{en?"Preview":"預覽"}</span>
+              <span style={{color:"var(--ink-4)", letterSpacing:"0.04em",
+                   textTransform:"none"}}>
+                {fileName} · {(bytes/1024).toFixed(1)} kB
+              </span>
+            </div>
+            <pre style={{margin:0, padding:"12px 14px", overflow:"auto",
+                 fontFamily:"'IBM Plex Mono', monospace", fontSize:11.5,
+                 lineHeight:1.55, color:"var(--ink)",
+                 background:"#fbfaf6", flex:1,
+                 whiteSpace: pretty ? "pre" : "pre-wrap",
+                 wordBreak: pretty ? "normal" : "break-all"}}>
+              {json}
+            </pre>
+          </div>
+        </div>
+      )}
+    </ActionShell>
+  );
+}
+
+// ---------- WatchScreen (notifications) ----------------------------------
+function WatchScreen({ t, lang, go, route }){
+  const en = lang === "en";
+  // Current results — always selectable.
+  const { parts, loading, progress } = useSearchResults({
+    query: route.q, bulk: !!route.bulk, pns: route.pns,
+  });
+  // Last 50 recent searches (SQLite-backed).
+  const [recent, setRecent] = React.useState(null);
+  const [recentErr, setRecentErr] = React.useState(null);
+  React.useEffect(()=>{
+    let cancelled = false;
+    (async ()=>{
+      try {
+        const j = await API.recent(50);
+        if(!cancelled) setRecent(Array.isArray(j.items) ? j.items : []);
+      } catch(err){ if(!cancelled){ setRecentErr(String(err)); setRecent([]); } }
+    })();
+    return ()=>{ cancelled = true; };
+  }, []);
+
+  const combined = React.useMemo(()=>{
+    // Merge current results (preferred, richer) + recent history, de-dup by pn.
+    const byPn = new Map();
+    (parts || []).forEach(p => byPn.set(p.advPN || p.mpn, {
+      id:    p.advPN || p.mpn,
+      mpn:   p.mpn, advPN: p.advPN, mfr: p.mfr,
+      lifecycle: p.lifecycle, yeol: p.yeol, risk: p.risk,
+      source: "current",
+    }));
+    (recent || []).forEach(r => {
+      const key = r.pn;
+      if(!byPn.has(key)) byPn.set(key, {
+        id: key, mpn: r.mpn || "", advPN: r.pn, mfr: r.manufacturer || "—",
+        lifecycle: r.lifecycle || "—", yeol: r.yeol || 0, risk: 0,
+        source: "recent", searchedAt: r.searchedAt,
+      });
+    });
+    return Array.from(byPn.values()).slice(0, 50);
+  }, [parts, recent]);
+
+  const WATCH_KEY = "ci-watchlist";
+  const [saved, setSavedState] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem(WATCH_KEY) || "null"); }
+    catch { return null; }
+  });
+
+  const [selParts, setSelParts] = React.useState([]);
+  const [email, setEmail]       = React.useState("daniellee1969@gmail.com");
+  const [freq, setFreq]         = React.useState("daily"); // realtime | daily | weekly
+  const [events, setEvents]     = React.useState(["pcn","eol","nrnd","pricing","stock","compliance"]);
+  const [severity, setSeverity] = React.useState("medium"); // low | medium | high
+  const [webhook, setWebhook]   = React.useState("");
+  const [busy, setBusy]         = React.useState(false);
+  const [toast, setToast]       = React.useState(null);
+
+  React.useEffect(()=>{
+    if(saved && saved.partIds && !selParts.length){
+      setSelParts(saved.partIds);
+      setEmail(saved.email || email);
+      setFreq(saved.freq || "daily");
+      setEvents(saved.events || events);
+      setSeverity(saved.severity || "medium");
+      setWebhook(saved.webhook || "");
+    } else if(!saved && parts && parts.length && !selParts.length){
+      // Pre-select the current result set once /api/search has resolved —
+      // keyed on `parts` (stable once loaded) rather than combined.length
+      // (flips as recent searches also stream in).
+      setSelParts(parts.map(p => p.advPN || p.mpn));
+    }
+  }, [parts, saved]);
+
+  const EVENTS = [
+    ["pcn",        en?"PCN (Product Change Notice)":"PCN 產品變更通知"],
+    ["eol",        en?"EOL notice":"停產通知"],
+    ["nrnd",       en?"NRND status":"不建議新設計"],
+    ["pricing",    en?"Pricing change":"價格異動"],
+    ["stock",      en?"Stock / inventory alert":"庫存警示"],
+    ["compliance", en?"RoHS / REACH change":"RoHS / REACH 變更"],
+  ];
+  const FREQ = [
+    ["realtime", en?"Real-time":"即時"],
+    ["daily",    en?"Daily digest":"每日摘要"],
+    ["weekly",   en?"Weekly digest":"每週摘要"],
+  ];
+
+  const save = () => {
+    setBusy(true);
+    const record = {
+      partIds: selParts, email, freq, events, severity, webhook,
+      updatedAt: new Date().toISOString(),
+    };
+    try { localStorage.setItem(WATCH_KEY, JSON.stringify(record)); } catch {}
+    setSavedState(record);
+    setTimeout(()=>{
+      setBusy(false);
+      setToast(en ? "Watchlist saved locally" : "已儲存於本機");
+      setTimeout(()=>setToast(null), 2500);
+    }, 400);
+  };
+  const clearSaved = () => {
+    try { localStorage.removeItem(WATCH_KEY); } catch {}
+    setSavedState(null);
+    setSelParts([]);
+    setToast(en?"Watchlist cleared":"已清除");
+    setTimeout(()=>setToast(null), 2000);
+  };
+
+  const emailOk = /\S+@\S+\.\S+/.test(email);
+  const canSave = selParts.length > 0 && emailOk && events.length > 0;
+
+  const primary = (
+    <div style={{display:"flex", gap:6, alignItems:"center"}}>
+      {saved && <Btn variant="quiet" size="sm" onClick={clearSaved}>
+        {en?"Clear saved":"清除設定"}
+      </Btn>}
+      <Btn variant="primary" icon={Ico.star()} onClick={save}
+        block={false}
+        children={busy
+          ? (en?"Saving…":"儲存中…")
+          : (saved ? (en?"Update watchlist":"更新追蹤清單")
+                   : (en?"Save watchlist":"儲存追蹤清單"))}/>
+    </div>
+  );
+
+  return (
+    <ActionShell t={t} lang={lang} go={go} route={route}
+      title={en?"Watch · PCN & lifecycle alerts":"追蹤 · PCN 與生命週期通知"}
+      subtitle={en
+        ? `${selParts.length} watched · ${events.length} event types · ${freq}`
+        : `追蹤 ${selParts.length} 筆 · ${events.length} 種事件 · ${freq}`}
+      primary={primary}>
+
+      {toast && (
+        <div style={{
+          padding:"10px 14px", marginBottom:12,
+          background:"#e8f4ec", border:"1px solid #b7dcc4", color:"#23603c",
+          fontSize:12.5, fontFamily:"'IBM Plex Mono', monospace",
+        }}>✓ {toast}</div>
+      )}
+
+      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:14}}>
+        {/* Component picker — current + up to 50 recent */}
+        <div>
+          {loading ? (
+            <ResultsLoading progress={progress} lang={lang}
+              isBulk={!!route.bulk}
+              pnsCount={Array.isArray(route.pns)?route.pns.length:0}/>
+          ) : (
+            <WatchPartChecklist lang={lang} parts={combined}
+              recentErr={recentErr}
+              selected={selParts} setSelected={setSelParts}/>
+          )}
+        </div>
+
+        {/* Notification config */}
+        <div style={{display:"flex", flexDirection:"column", gap:14}}>
+          <div style={{background:"#fff", border:"1px solid var(--line)"}}>
+            <div style={{padding:"10px 14px", borderBottom:"1px solid var(--line)",
+                 fontSize:11, fontFamily:"'IBM Plex Mono', monospace",
+                 letterSpacing:"0.12em", textTransform:"uppercase",
+                 color:"var(--ink-3)"}}>
+              {en?"Delivery":"通知方式"}
+            </div>
+            <div style={{padding:"14px", display:"flex",
+                 flexDirection:"column", gap:14}}>
+              <div style={{display:"flex", flexDirection:"column", gap:6}}>
+                <div style={{fontSize:10.5, color:"var(--ink-4)",
+                     fontFamily:"'IBM Plex Mono', monospace",
+                     letterSpacing:"0.12em", textTransform:"uppercase"}}>
+                  {en?"Email":"電子郵件"}
+                </div>
+                <input type="email" value={email}
+                  onChange={e=>setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  style={{
+                    padding:"8px 10px", fontSize:13,
+                    fontFamily:"'IBM Plex Mono', monospace",
+                    border:`1px solid ${emailOk?"var(--line-strong)":"#d98b74"}`,
+                    background:"#fff", outline:"none", borderRadius:2,
+                  }}/>
+                {!emailOk && email && (
+                  <div style={{fontSize:11, color:"#a9391a",
+                       fontFamily:"'IBM Plex Mono', monospace"}}>
+                    {en?"Invalid email format":"電子郵件格式錯誤"}
+                  </div>
+                )}
+              </div>
+              <ReportOption
+                label={en?"Frequency":"頻率"}
+                options={FREQ}
+                value={freq} onChange={setFreq}/>
+              <div style={{display:"flex", flexDirection:"column", gap:6}}>
+                <div style={{fontSize:10.5, color:"var(--ink-4)",
+                     fontFamily:"'IBM Plex Mono', monospace",
+                     letterSpacing:"0.12em", textTransform:"uppercase"}}>
+                  {en?"Slack / Teams webhook (optional)"
+                     :"Slack / Teams Webhook (選填)"}
+                </div>
+                <input type="url" value={webhook}
+                  onChange={e=>setWebhook(e.target.value)}
+                  placeholder="https://hooks.slack.com/…"
+                  style={{
+                    padding:"8px 10px", fontSize:12,
+                    fontFamily:"'IBM Plex Mono', monospace",
+                    border:"1px solid var(--line-strong)",
+                    background:"#fff", outline:"none", borderRadius:2,
+                  }}/>
+              </div>
+            </div>
+          </div>
+
+          <div style={{background:"#fff", border:"1px solid var(--line)"}}>
+            <div style={{padding:"10px 14px", borderBottom:"1px solid var(--line)",
+                 fontSize:11, fontFamily:"'IBM Plex Mono', monospace",
+                 letterSpacing:"0.12em", textTransform:"uppercase",
+                 color:"var(--ink-3)"}}>
+              {en?"Event types":"事件類別"}
+            </div>
+            <div style={{padding:"6px 0"}}>
+              {EVENTS.map(([k,l])=>{
+                const on = events.includes(k);
+                return (
+                  <label key={k} style={{
+                    display:"flex", alignItems:"center", gap:10,
+                    padding:"8px 14px", cursor:"pointer",
+                    borderBottom:"1px dashed var(--line)",
+                  }}>
+                    <input type="checkbox" checked={on}
+                      onChange={()=>setEvents(s => on
+                        ? s.filter(x=>x!==k) : [...s, k])}
+                      style={{accentColor:"var(--accent)"}}/>
+                    <span style={{flex:1, fontSize:12.5}}>{l}</span>
+                    <span style={{fontFamily:"'IBM Plex Mono', monospace",
+                         fontSize:10.5, color:"var(--ink-4)",
+                         letterSpacing:"0.06em", textTransform:"uppercase"}}>
+                      {k}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div style={{padding:"14px", borderTop:"1px solid var(--line)"}}>
+              <ReportOption
+                label={en?"Minimum severity":"最低嚴重度"}
+                options={[["low",en?"All":"全部"],
+                          ["medium",en?"Medium":"中"],
+                          ["high",en?"High":"高"]]}
+                value={severity} onChange={setSeverity}/>
+            </div>
+          </div>
+
+          {saved && (
+            <div style={{padding:"10px 14px", background:"var(--surface)",
+                 border:"1px solid var(--line)",
+                 fontFamily:"'IBM Plex Mono', monospace", fontSize:11,
+                 color:"var(--ink-3)", lineHeight:1.6}}>
+              {en?"Last saved":"上次儲存"}:{" "}
+              {new Date(saved.updatedAt).toLocaleString()}
+            </div>
+          )}
+          {!canSave && (
+            <div style={{padding:"10px 14px", background:"#fbf3df",
+                 border:"1px solid #e6d39a", color:"#735108", fontSize:12}}>
+              {en
+                ? "Select at least one component, a valid email, and one event type to save."
+                : "至少選一筆零件、填寫有效電子郵件並選擇一種事件。"}
+            </div>
+          )}
+        </div>
+      </div>
+    </ActionShell>
+  );
+}
+
+function WatchPartChecklist({ lang, parts, selected, setSelected, recentErr }){
+  const en = lang === "en";
+  const toggle = id => setSelected(s => s.includes(id)
+    ? s.filter(x => x !== id) : [...s, id]);
+  const all = ()=>setSelected(parts.map(p=>p.id));
+  const none = ()=>setSelected([]);
+  return (
+    <div style={{background:"#fff", border:"1px solid var(--line)"}}>
+      <div style={{
+        padding:"10px 14px", borderBottom:"1px solid var(--line)",
+        display:"flex", alignItems:"center", gap:10,
+        fontSize:11, fontFamily:"'IBM Plex Mono', monospace",
+        letterSpacing:"0.12em", textTransform:"uppercase", color:"var(--ink-3)",
+      }}>
+        <span style={{flex:1}}>
+          {en?"Components (current + recent 50)":"零件 (當前 + 最近 50 筆)"}
+        </span>
+        <span style={{color:"var(--ink-4)", letterSpacing:"0.04em",
+             textTransform:"none"}}>
+          {selected.length} · {parts.length}
+        </span>
+        <button onClick={all} style={{background:"transparent",
+             border:"none", fontSize:11, color:"var(--accent-ink)",
+             cursor:"pointer", padding:0}}>
+          {en?"All":"全選"}
+        </button>
+        <button onClick={none} style={{background:"transparent",
+             border:"none", fontSize:11, color:"var(--ink-3)",
+             cursor:"pointer", padding:0}}>
+          {en?"None":"清除"}
+        </button>
+      </div>
+      {recentErr && (
+        <div style={{padding:"8px 14px", background:"#fbeeea",
+             borderBottom:"1px solid #ebc4bb", color:"#8a2414",
+             fontSize:11, fontFamily:"'IBM Plex Mono', monospace"}}>
+          /api/recent · {recentErr}
+        </div>
+      )}
+      <div style={{maxHeight:560, overflow:"auto"}}>
+        {parts.map(p => {
+          const on = selected.includes(p.id);
+          return (
+            <label key={p.id} style={{
+              display:"flex", alignItems:"center", gap:10,
+              padding:"9px 14px", borderBottom:"1px dashed var(--line)",
+              cursor:"pointer",
+            }}>
+              <input type="checkbox" checked={on}
+                     onChange={()=>toggle(p.id)}
+                     style={{accentColor:"var(--accent)"}}/>
+              <div style={{flex:1, minWidth:0}}>
+                <div style={{display:"flex", gap:8, alignItems:"baseline"}}>
+                  <span style={{fontFamily:"'IBM Plex Mono', monospace",
+                       fontWeight:600, fontSize:12}}>
+                    {p.advPN}
+                  </span>
+                  <span style={{fontSize:10.5, color:"var(--ink-4)",
+                       fontFamily:"'IBM Plex Mono', monospace"}}>
+                    {p.mpn || "—"}
+                  </span>
+                </div>
+                <div style={{fontSize:10.5, color:"var(--ink-3)",
+                     fontFamily:"'IBM Plex Mono', monospace",
+                     letterSpacing:"0.06em", textTransform:"uppercase"}}>
+                  {p.mfr}
+                </div>
+              </div>
+              {p.lifecycle && p.lifecycle !== "—" && (
+                <Pill tone={lifecycleTone(p.lifecycle)}>
+                  <Dot tone={lifecycleTone(p.lifecycle)}/>{p.lifecycle}
+                </Pill>
+              )}
+              <span style={{fontSize:9.5, letterSpacing:"0.08em",
+                   textTransform:"uppercase",
+                   color:"var(--ink-4)",
+                   fontFamily:"'IBM Plex Mono', monospace"}}>
+                {p.source}
+              </span>
+            </label>
+          );
+        })}
+        {parts.length === 0 && (
+          <div style={{padding:"18px 14px", fontSize:12,
+               color:"var(--ink-3)", fontFamily:"'IBM Plex Mono', monospace"}}>
+            {en?"No components available yet.":"尚無可追蹤零件。"}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- CompareScreen (side-by-side, up to 5) ----------------------
+function CompareScreen({ t, lang, go, route }){
+  const en = lang === "en";
+  const { parts, loading, progress } = useSearchResults({
+    query: route.q, bulk: !!route.bulk, pns: route.pns,
+  });
+  const real = parts || [];
+  const [selParts, setSelParts] = React.useState([]);
+  const [group, setGroup] = React.useState({
+    overview: true, lifecycle: true, pricing: true,
+    compliance: true, packaging: false, documents: false, countries: false,
+  });
+
+  React.useEffect(()=>{
+    if(!loading && !selParts.length && real.length){
+      setSelParts(real.slice(0, Math.min(3, real.length)).map(p=>p.id));
+    }
+  }, [loading, real.length]);
+
+  const cols = real.filter(p => selParts.includes(p.id));
+  const enoughSelected = cols.length >= 2;
+
+  const downloadCsv = () => {
+    const rows = compareRows(cols, group, en);
+    const csv = [["Attribute", ...cols.map(c=>c.mpn)], ...rows.map(r=>[
+      r.label, ...r.values.map(v=>String(v ?? "—"))])]
+      .map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `comparison-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  };
+
+  const primary = (
+    <div style={{display:"flex", gap:6}}>
+      <Btn variant="quiet" size="sm" icon={Ico.exp()}
+           onClick={enoughSelected ? downloadCsv : undefined}>
+        {en?"Export CSV":"匯出 CSV"}
+      </Btn>
+      <Btn variant="primary" icon={Ico.dl()}
+           onClick={enoughSelected ? ()=>{
+             openPrintWindow(
+               buildCompareHtml({ cols, group, lang }),
+               en ? "Allow pop-ups to print." : "請允許快顯以列印。"
+             );
+           } : undefined}>
+        {en?"Print":"列印"}
+      </Btn>
+    </div>
+  );
+
+  return (
+    <ActionShell t={t} lang={lang} go={go} route={route}
+      title={en?"Compare · side-by-side":"比較 · 並列"}
+      subtitle={en
+        ? `${cols.length}/5 components selected`
+        : `已選 ${cols.length}/5 筆`}
+      primary={primary}>
+
+      {loading ? (
+        <ResultsLoading progress={progress} lang={lang}
+          isBulk={!!route.bulk}
+          pnsCount={Array.isArray(route.pns)?route.pns.length:0}/>
+      ) : (
+        <div style={{display:"grid", gridTemplateColumns:"320px 1fr", gap:14}}>
+          <div style={{display:"flex", flexDirection:"column", gap:14}}>
+            <PartChecklist lang={lang} parts={real}
+              selected={selParts} setSelected={setSelParts}
+              max={5} title={en?"Pick up to 5":"最多選 5 筆"}/>
+            <div style={{background:"#fff", border:"1px solid var(--line)"}}>
+              <div style={{padding:"10px 14px",
+                   borderBottom:"1px solid var(--line)",
+                   fontSize:11, fontFamily:"'IBM Plex Mono', monospace",
+                   letterSpacing:"0.12em", textTransform:"uppercase",
+                   color:"var(--ink-3)"}}>
+                {en?"Attribute groups":"屬性分類"}
+              </div>
+              <div>
+                {[
+                  ["overview",en?"Overview":"總覽"],
+                  ["lifecycle",en?"Lifecycle & Risk":"生命週期與風險"],
+                  ["pricing",en?"Pricing & Stock":"價格與庫存"],
+                  ["compliance",en?"Compliance":"法規符合"],
+                  ["packaging",en?"Packaging":"封裝資料"],
+                  ["documents",en?"Documents":"文件"],
+                  ["countries",en?"Countries":"原產地"],
+                ].map(([k,l])=>(
+                  <label key={k} style={{display:"flex", alignItems:"center",
+                       gap:10, padding:"8px 14px",
+                       borderBottom:"1px dashed var(--line)",
+                       cursor:"pointer"}}>
+                    <input type="checkbox" checked={!!group[k]}
+                      onChange={e=>setGroup(g=>({...g, [k]: e.target.checked}))}
+                      style={{accentColor:"var(--accent)"}}/>
+                    <span style={{fontSize:12.5}}>{l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{background:"#fff", border:"1px solid var(--line)",
+               overflow:"auto"}}>
+            {!enoughSelected ? (
+              <div style={{padding:"60px 28px", textAlign:"center",
+                   color:"var(--ink-3)", fontSize:13, lineHeight:1.6}}>
+                {en
+                  ? "Select at least 2 components on the left to build a comparison table."
+                  : "請於左側至少選 2 筆以產生比較表。"}
+              </div>
+            ) : (
+              <CompareTable cols={cols} group={group} lang={lang}/>
+            )}
+          </div>
+        </div>
+      )}
+    </ActionShell>
+  );
+}
+
+function compareRows(cols, group, en){
+  const rows = [];
+  const grp = (id, label, values, numeric) =>
+    rows.push({ id, label, values, numeric: !!numeric });
+  if(group.overview){
+    grp("g-overview", en?"— Overview":"— 總覽", cols.map(()=>""));
+    grp("mpn",          en?"MPN":"製造商料號",   cols.map(p=>p.mpn));
+    grp("advPN",        en?"Advantech P/N":"研華料號", cols.map(p=>p.advPN||"—"));
+    grp("mfr",          en?"Manufacturer":"製造商", cols.map(p=>p.mfr));
+    grp("category",     en?"Category":"類別",     cols.map(p=>p.category));
+    grp("desc",         en?"Description":"描述",  cols.map(p=>p.desc));
+  }
+  if(group.lifecycle){
+    grp("g-lc", en?"— Lifecycle & Risk":"— 生命週期與風險", cols.map(()=>""));
+    grp("lifecycle",    en?"Lifecycle":"生命週期", cols.map(p=>p.lifecycle));
+    grp("yeol",         en?"Years to EOL":"預估 EOL 年限",
+      cols.map(p=>(p.yeol||0).toFixed(1)+"y"), true);
+    grp("eolDate",      en?"Estimated EOL":"預估停產日",
+      cols.map(p=>p.eolDate||"—"));
+    grp("risk",         en?"Risk %":"風險 %",
+      cols.map(p=>p.risk.toFixed(0)+"%"), "lowerBetter");
+    grp("resilience",   en?"Resilience":"韌性",
+      cols.map(p=>typeof p.resilience==="number"
+         ? p.resilience.toFixed(1)+" / 10" : "—"), true);
+  }
+  if(group.pricing){
+    grp("g-pr", en?"— Pricing & Stock":"— 價格與庫存", cols.map(()=>""));
+    grp("priceMin",     en?"Min unit price":"最低單價",
+      cols.map(p=>typeof p.priceMin==="number"?"$"+p.priceMin.toFixed(4):"—"),
+      "lowerBetter");
+    grp("priceAvg",     en?"Avg unit price":"平均單價",
+      cols.map(p=>typeof p.priceAvg==="number"?"$"+p.priceAvg.toFixed(4):"—"));
+    grp("stock",        en?"Total inventory":"總庫存",
+      cols.map(p=>typeof p.totalInventory==="number"
+         ? p.totalInventory.toLocaleString() : "—"), true);
+    grp("channels",     en?"Distributors":"通路",
+      cols.map(p=>typeof p.distributorsWithStock==="number"
+         ? String(p.distributorsWithStock) : "—"), true);
+  }
+  if(group.compliance){
+    grp("g-cp", en?"— Compliance":"— 法規符合", cols.map(()=>""));
+    grp("rohs",   "RoHS",  cols.map(p=>p.rohs ? "✓" : "—"));
+    grp("reach",  "REACH", cols.map(p=>p.reach ? "✓" : "—"));
+    grp("ce",     "CE",    cols.map(p=>p.ce ? "✓" : "—"));
+  }
+  if(group.packaging){
+    grp("g-pk", en?"— Packaging":"— 封裝資料", cols.map(()=>""));
+    grp("package",  en?"Package":"封裝",
+      cols.map(p=>(p.packaging && p.packaging.packaging) || "—"));
+    grp("qty",      en?"Qty per package":"每包數量",
+      cols.map(p=>(p.packaging && p.packaging.qtyPerPackaging) || "—"));
+    grp("mount",    en?"Mounting":"安裝方式",
+      cols.map(p=>(p.packaging && p.packaging.mounting) || "—"));
+  }
+  if(group.documents){
+    grp("g-dc", en?"— Documents":"— 文件", cols.map(()=>""));
+    grp("docs",     en?"Document count":"文件數量",
+      cols.map(p=>String(Array.isArray(p.documents)?p.documents.length:0)),
+      true);
+  }
+  if(group.countries){
+    grp("g-cn", en?"— Countries of Origin":"— 原產地", cols.map(()=>""));
+    grp("countries", en?"Country count":"國家數",
+      cols.map(p=>String(Array.isArray(p.countries)?p.countries.length:0)),
+      true);
+  }
+  return rows;
+}
+
+function CompareTable({ cols, group, lang }){
+  const en = lang === "en";
+  const rows = compareRows(cols, group, en);
+  // Find best/worst per numeric row to highlight winners.
+  const winners = rows.map(r => {
+    if(!r.numeric) return null;
+    const nums = r.values.map(v => {
+      if(typeof v !== "string") return NaN;
+      const m = v.replace(/[^-0-9.]/g,"");
+      return m ? parseFloat(m) : NaN;
+    });
+    const valid = nums.filter(n=>!Number.isNaN(n));
+    if(!valid.length) return null;
+    const lowerBetter = r.numeric === "lowerBetter";
+    const best = lowerBetter ? Math.min(...valid) : Math.max(...valid);
+    const worst = lowerBetter ? Math.max(...valid) : Math.min(...valid);
+    return nums.map(n => n === best ? "best" : (n === worst && best !== worst ? "worst" : null));
+  });
+  return (
+    <table style={{width:"100%", borderCollapse:"collapse", fontSize:12.5}}>
+      <thead>
+        <tr style={{borderBottom:"1px solid var(--line-strong)"}}>
+          <th style={{
+            textAlign:"left", padding:"12px 14px",
+            fontFamily:"'IBM Plex Mono', monospace", fontSize:11,
+            color:"var(--ink-3)", letterSpacing:"0.1em",
+            textTransform:"uppercase", width:220,
+          }}>{en?"Attribute":"屬性"}</th>
+          {cols.map(c=>(
+            <th key={c.id} style={{
+              textAlign:"left", padding:"12px 14px",
+              verticalAlign:"bottom",
+              borderLeft:"1px solid var(--line)",
+            }}>
+              <div style={{fontFamily:"'IBM Plex Mono', monospace",
+                   fontSize:10.5, color:"var(--ink-4)",
+                   letterSpacing:"0.1em", textTransform:"uppercase"}}>
+                {c.mfr}
+              </div>
+              <div style={{fontFamily:"'IBM Plex Mono', monospace",
+                   fontSize:13.5, fontWeight:600, marginTop:2}}>
+                {c.mpn}
+              </div>
+              <div style={{fontSize:11, color:"var(--ink-3)",
+                   fontFamily:"'IBM Plex Mono', monospace", marginTop:2}}>
+                {c.advPN || "—"}
+              </div>
+              <div style={{display:"flex", gap:4, marginTop:6}}>
+                <Pill tone={lifecycleTone(c.lifecycle)}>
+                  <Dot tone={lifecycleTone(c.lifecycle)}/>{c.lifecycle}
+                </Pill>
+              </div>
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r,i)=>{
+          const isGroup = r.id.startsWith("g-");
+          if(isGroup){
+            return (
+              <tr key={r.id} style={{background:"var(--surface-2)"}}>
+                <td colSpan={cols.length+1} style={{
+                  padding:"8px 14px", fontSize:10.5,
+                  color:"var(--ink-3)",
+                  fontFamily:"'IBM Plex Mono', monospace",
+                  letterSpacing:"0.12em", textTransform:"uppercase",
+                }}>{r.label}</td>
+              </tr>
+            );
+          }
+          return (
+            <tr key={r.id} style={{borderBottom:"1px solid var(--line)"}}>
+              <td style={{padding:"10px 14px",
+                   color:"var(--ink-3)", fontSize:11.5,
+                   fontFamily:"'IBM Plex Mono', monospace"}}>{r.label}</td>
+              {r.values.map((v,j)=>{
+                const w = winners[i] && winners[i][j];
+                return (
+                  <td key={j} style={{
+                    padding:"10px 14px", borderLeft:"1px solid var(--line)",
+                    background: w==="best" ? "#eaf4ed"
+                              : w==="worst" ? "#fbeeea" : "transparent",
+                    fontWeight: w==="best" ? 600 : 400,
+                    color: w==="best" ? "#23603c"
+                         : w==="worst" ? "#8a2414" : "var(--ink)",
+                    fontFamily: typeof v === "string" && /^[$\d]/.test(v)
+                      ? "'IBM Plex Mono', monospace" : "inherit",
+                  }}>{v ?? "—"}</td>
+                );
+              })}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+Object.assign(window, {
+  useSearchResults, DownloadScreen, ExportScreen, WatchScreen, CompareScreen,
+});
+
+
 /* ===== app.babel.js ===== */
 // App root: router, state, tweaks wiring.
 
@@ -5070,6 +6766,10 @@ function App(){
           {route.name==="home" && <HomeScreen t={t} lang={lang} go={go} initialTab={route.tab || "single"}/>}
           {route.name==="results" && <ResultsScreen t={t} lang={lang} go={go}
               query={route.q || ""} bulk={!!route.bulk} pns={Array.isArray(route.pns) ? route.pns : null}/>}
+          {route.name==="download" && <DownloadScreen t={t} lang={lang} go={go} route={route}/>}
+          {route.name==="export"   && <ExportScreen   t={t} lang={lang} go={go} route={route}/>}
+          {route.name==="watch"    && <WatchScreen    t={t} lang={lang} go={go} route={route}/>}
+          {route.name==="compare"  && <CompareScreen  t={t} lang={lang} go={go} route={route}/>}
           {route.name==="detail"  && <DetailScreen  t={t} lang={lang} go={go}
               id={route.id} routePN={route.pn} routeMPN={route.mpn} routeMfr={route.mfr}/>}
         </main>
