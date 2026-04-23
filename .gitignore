@@ -80,3 +80,6 @@ design/
 *.bak
 scratch/
 .tmp/
+
+# ---------- Share bundles (generated via copy from mcp_server/) ----------
+share/

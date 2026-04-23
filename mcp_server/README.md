@@ -1,81 +1,84 @@
 # SiliconExpert Demo — MCP Server
 
-Exposes the [SiliconExpert Demo Web App](https://siliconexpert-demo-cslee.azurewebsites.net/) as an MCP (Model Context Protocol) server so LLMs can answer questions about Advantech parts and their SiliconExpert data.
+Exposes the [SiliconExpert Demo Web App](https://siliconexpert-demo-cslee.azurewebsites.net/) as an MCP (Model Context Protocol) server so LLMs — Claude Desktop, Claude Code, Cursor, etc. — can answer questions about Advantech parts and their SiliconExpert data.
+
+---
+
+## Quick start (5 minutes)
+
+1. **Unzip** this bundle somewhere on your machine. For the rest of this README, that path is called `<MCP_DIR>` — for example `C:\Tools\siliconexpert-mcp-server` on Windows or `~/tools/siliconexpert-mcp-server` on macOS.
+2. **Install** — one command (see platform-specific scripts below).
+3. **Configure your MCP client** — paste one JSON block into Claude Desktop's or Claude Code's config.
+4. **Restart** the client and ask *"Is Advantech part 1410025327-27A0 near end-of-life?"*.
+
+Prerequisites: **Python 3.10+** on PATH (tested on 3.12). No other system packages needed — HTTP calls go to the public Azure Web App at `https://siliconexpert-demo-cslee.azurewebsites.net`.
+
+---
 
 ## What it does
 
-Each `/api/*` slice of the live backend is wrapped as a focused MCP tool. A chat client (Claude Desktop, Claude Code, Cursor, etc.) can call these tools to pull just the data needed to answer a specific question.
+Each `/api/*` slice of the live backend is wrapped as a focused MCP tool. The LLM picks the right tool for the question; the first call for a PN fetches the full detail bundle, subsequent slice calls on the same PN are served from an in-process cache.
 
-| Tool | Backs |
-|---|---|
-| `search_advantech_part` | `/api/search` |
-| `get_overview` | `/api/detail` → `part` + `parametric` |
-| `get_lifecycle_and_risk` | `/api/detail` → `lifecycle` |
-| `get_pricing_and_stock` | `/api/detail` → `commercial` |
-| `get_compliance` | `/api/detail` → `regulatory` + `chemicals` |
-| `get_documents` | `/api/detail` → `documents` |
-| `get_packaging_data` | `/api/detail` → `packaging` |
-| `get_countries_of_origin` | `/api/detail` → `countries` |
-| `get_cross_reference` | `/api/xref` |
-| `get_pcn_history` | `/api/pcn` |
-| `get_full_part_info` | `/api/detail` (everything except raw SE blob) |
+| Tool | Backs | Use for questions like |
+|---|---|---|
+| `search_advantech_part` | `/api/search` | "Is this a real PN?" |
+| `get_overview` | `/api/detail` → `part` + `parametric` | "What is X? Who makes it? Key specs?" |
+| `get_lifecycle_and_risk` | `/api/detail` → `lifecycle` | "Is X end-of-life? YTEOL? Risk?" |
+| `get_pricing_and_stock` | `/api/detail` → `commercial` | "Price? Stock? Lead time? Supply risk?" |
+| `get_compliance` | `/api/detail` → `regulatory` + `chemicals` | "RoHS? REACH? Halogen? CAS list?" |
+| `get_documents` | `/api/detail` → `documents` | "Datasheet? Image? Certifications?" |
+| `get_packaging_data` | `/api/detail` → `packaging` | "Package? MSL? Reel size?" |
+| `get_countries_of_origin` | `/api/detail` → `countries` | "Where is it made?" |
+| `get_cross_reference` | `/api/xref` | "What are alternatives to X?" |
+| `get_pcn_history` | `/api/pcn` | "Any recent PCNs on X?" |
+| `get_full_part_info` | `/api/detail` (minus raw SE blob) | "Tell me everything about X." |
 
-The first tool call for a part number fetches `/api/detail` once and caches it in-process. Subsequent slice-tool calls on the same PN are served from cache — no extra round-trips to Azure.
+---
 
 ## Install
 
-Use a dedicated virtualenv. Claude Desktop launches the server with whatever
-`python` it finds on PATH, which is often a different interpreter than the one
-you used on the command line — so installing deps into a venv and pointing the
-config at `<venv>/Scripts/python.exe` (Windows) or `<venv>/bin/python`
-(macOS/Linux) avoids "No module named httpx" surprises.
+### Windows (PowerShell)
 
-**Windows (PowerShell):**
 ```powershell
-cd mcp_server
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+cd <MCP_DIR>
+.\install.ps1
 ```
 
-**macOS / Linux:**
+### macOS / Linux
+
 ```bash
-cd mcp_server
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+cd <MCP_DIR>
+./install.sh
 ```
 
-Requires Python 3.10+. Tested on 3.12.
+Either script:
+1. Creates a `.venv/` inside `<MCP_DIR>`.
+2. Installs `httpx` and `mcp` into the venv.
+3. Runs a self-test that registers all 11 tools.
 
-## Configuration
+**Prefer to do it manually?** The two lines inside `install.ps1` / `install.sh` are all it takes — `python -m venv .venv` and `pip install -r requirements.txt`.
 
-The server reads these environment variables:
+---
 
-| Name | Default | Purpose |
-|---|---|---|
-| `SE_API_BASE` | `https://siliconexpert-demo-cslee.azurewebsites.net` | Target Web App. Override to point at a local Flask (`http://127.0.0.1:8000`) or a different Azure deployment. |
-| `SE_API_TIMEOUT` | `60` | Per-request timeout in seconds. |
-| `SE_MCP_LOG_LEVEL` | `INFO` | Python logging level. Logs go to stderr. |
+## Configure your MCP client
 
-## Wiring it into Claude Desktop
+> **Important**: Always point `"command"` at the **venv's Python**, not plain `"python"`. Claude Desktop and Claude Code launch subprocesses with whatever `python` is first on PATH, which is usually a different interpreter than the one your install step used. Missing this is the #1 cause of "No module named httpx" in the log.
+
+### Claude Desktop
 
 Edit `claude_desktop_config.json`:
+* **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+* **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-* Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-* macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-Add an `mcpServers` entry. **Use the absolute path to the venv's Python**, not
-just `"python"`, or Claude Desktop will launch a different interpreter that
-doesn't have `httpx` / `mcp` installed:
+Add (replacing `<MCP_DIR>` with your actual unzipped path — use **double backslashes** on Windows):
 
 ```json
 {
   "mcpServers": {
     "siliconexpert-demo": {
-      "command": "C:\\Users\\cs.lee.ADVANTECH\\Documents\\ClaudeCodeProjects\\SiliconExpertDemoSite\\mcp_server\\.venv\\Scripts\\python.exe",
+      "command": "<MCP_DIR>\\.venv\\Scripts\\python.exe",
       "args": [
-        "C:\\Users\\cs.lee.ADVANTECH\\Documents\\ClaudeCodeProjects\\SiliconExpertDemoSite\\mcp_server\\server.py"
+        "<MCP_DIR>\\server.py"
       ],
       "env": {
         "SE_API_BASE": "https://siliconexpert-demo-cslee.azurewebsites.net"
@@ -85,27 +88,36 @@ doesn't have `httpx` / `mcp` installed:
 }
 ```
 
-On macOS/Linux the `command` path is `<repo>/mcp_server/.venv/bin/python`.
+macOS / Linux version (forward slashes, `bin/python`):
 
-Restart Claude Desktop. You should see the hammer / tools icon in the prompt
-bar — clicking it lists all 11 tools.
-
-**If you see `No module named httpx` in the log**, the config is pointing at
-the wrong Python. Verify the `command` path resolves to the venv you installed
-deps into. On Windows you can confirm with:
-
-```powershell
-C:\…\mcp_server\.venv\Scripts\python.exe -c "import httpx, mcp; print('ok')"
+```json
+{
+  "mcpServers": {
+    "siliconexpert-demo": {
+      "command": "<MCP_DIR>/.venv/bin/python",
+      "args": [
+        "<MCP_DIR>/server.py"
+      ],
+      "env": {
+        "SE_API_BASE": "https://siliconexpert-demo-cslee.azurewebsites.net"
+      }
+    }
+  }
+}
 ```
 
-## Wiring it into Claude Code
+Fully quit Claude Desktop (tray icon → **Quit**, not just close the window) and re-open. The hammer / tools icon in the prompt bar should show **11 tools**.
 
-From any directory, pointing at the venv's Python:
+### Claude Code
+
+From any terminal:
 
 ```bash
-claude mcp add siliconexpert-demo --scope user -- \
-  /absolute/path/to/mcp_server/.venv/bin/python \
-  /absolute/path/to/mcp_server/server.py
+# Windows
+claude mcp add siliconexpert-demo --scope user -- "<MCP_DIR>\.venv\Scripts\python.exe" "<MCP_DIR>\server.py"
+
+# macOS / Linux
+claude mcp add siliconexpert-demo --scope user -- "<MCP_DIR>/.venv/bin/python" "<MCP_DIR>/server.py"
 ```
 
 Or add it per-project to `.mcp.json`:
@@ -114,49 +126,83 @@ Or add it per-project to `.mcp.json`:
 {
   "mcpServers": {
     "siliconexpert-demo": {
-      "command": "./mcp_server/.venv/Scripts/python.exe",
-      "args": ["./mcp_server/server.py"]
+      "command": "<MCP_DIR>/.venv/bin/python",
+      "args": ["<MCP_DIR>/server.py"]
     }
   }
 }
 ```
 
+---
+
 ## Example prompts
 
-Once connected, you can ask natural-language questions. The LLM picks the right tool(s) on its own.
+Try these once connected:
 
-* *"What is Advantech part 1410025327-27A0?"* → `search_advantech_part` → `get_overview`
-* *"Is 1410025327-27A0 near end-of-life?"* → `get_lifecycle_and_risk`
-* *"What's the pricing and stock for 1410025601-02?"* → `get_pricing_and_stock`
-* *"Is 1100000041 RoHS and REACH compliant?"* → `get_compliance`
-* *"What are cross-references for 1100000041?"* → `get_cross_reference`
-* *"Any PCNs on 10000158?"* → `get_pcn_history`
-* *"Give me a full summary of 1410025327-27A0"* → `get_full_part_info`
-* *"Where is 1410025601-02 manufactured?"* → `get_countries_of_origin`
+* *"What is Advantech part `1410025327-27A0`?"* → picks `search_advantech_part` → `get_overview`
+* *"Is `1410025327-27A0` near end-of-life?"* → `get_lifecycle_and_risk`
+* *"What's the pricing and stock for `1410025601-02`?"* → `get_pricing_and_stock`
+* *"Is `1100000041` RoHS and REACH compliant?"* → `get_compliance`
+* *"What are cross-references for `1100000041`?"* → `get_cross_reference`
+* *"Any PCNs on `10000158`?"* → `get_pcn_history`
+* *"Give me a full summary of `1410025327-27A0`"* → `get_full_part_info`
+* *"Where is `1410025601-02` manufactured?"* → `get_countries_of_origin`
 
-## Local-first development
+---
 
-Point the server at a local Flask instance for fast iteration:
+## Environment variables
 
-```powershell
-$env:SE_API_BASE="http://127.0.0.1:8000"
-python server.py
-```
+The server reads these (all optional):
 
-Then start the Flask backend separately (`python backend/flask_app.py` from the repo root).
+| Name | Default | Purpose |
+|---|---|---|
+| `SE_API_BASE` | `https://siliconexpert-demo-cslee.azurewebsites.net` | Target Web App. Override to point at a local Flask (`http://127.0.0.1:8000`) or a different Azure deployment. |
+| `SE_API_TIMEOUT` | `60` | Per-request HTTP timeout in seconds. |
+| `SE_MCP_LOG_LEVEL` | `INFO` | Python logging level. Logs go to stderr. |
+
+In Claude Desktop, set these in the `"env"` block of `mcpServers`. In Claude Code, either in `.mcp.json` or via `claude mcp add --env SE_API_BASE=...`.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Log: `No module named httpx` | `"command"` is pointing at the wrong Python. Run `<MCP_DIR>/.venv/Scripts/python.exe -c "import httpx, mcp; print('ok')"` — if it errors, rebuild the venv (delete `.venv/` and re-run the install script). |
+| Log: `Server transport closed unexpectedly` | Almost always a crash in the Python process. Scroll up in the log for the traceback. |
+| No hammer / tools icon in Claude Desktop | The config JSON is malformed or the file isn't at the expected path. Paste the config into a JSON linter. |
+| Tools show but all calls return `{ "error": "..." }` | The Azure Web App is unreachable from this machine. Test with `curl https://siliconexpert-demo-cslee.azurewebsites.net/api/health` — if that fails, check the network / proxy. |
+| Tool call hangs for > 60s | Increase `SE_API_TIMEOUT` (e.g. set to `120`). SE's xref endpoint is occasionally slow. |
+
+---
 
 ## Testing tools without an MCP client
 
 The MCP SDK ships a dev inspector:
 
 ```bash
-mcp dev mcp_server/server.py
+<MCP_DIR>/.venv/bin/mcp dev <MCP_DIR>/server.py
 ```
 
 Opens a browser UI listing all tools; you can invoke each with arbitrary arguments and see the raw response. Useful for verifying a tool before plugging it into an LLM.
 
+---
+
 ## Known limitations
 
 * **No auth on the backend.** The Azure Web App currently has no API key. If auth is added later, the MCP server will need to forward a token — add an `SE_API_KEY` env var and an `Authorization` header in `_get()`.
-* **In-process cache only.** If you run multiple MCP server instances (e.g. Claude Desktop + Claude Code simultaneously), each has its own cache. Moving to a shared cache (Redis / SQLite) isn't worth it at this scale.
-* **No pagination for `/api/xref`.** Some parts have 400+ crosses; the full list is returned in one response. Claude handles it but the token cost is non-trivial — if this becomes a problem, add a `limit` / `offset` pair to the xref tool.
+* **In-process cache only.** If you run multiple MCP server instances (e.g. Claude Desktop + Claude Code simultaneously), each has its own cache.
+* **No pagination for `/api/xref`.** Some parts have 400+ crosses; the full list is returned in one response. The LLM handles it but tokens aren't free.
+
+---
+
+## Files in this bundle
+
+```
+<MCP_DIR>/
+├── README.md          ← you are here
+├── server.py          ← the MCP server (11 tools)
+├── requirements.txt   ← pinned deps (httpx, mcp)
+├── install.ps1        ← Windows one-command installer
+└── install.sh         ← macOS / Linux one-command installer
+```
