@@ -168,6 +168,7 @@ In Claude Desktop, set these in the `"env"` block of `mcpServers`. In Claude Cod
 
 | Symptom | Fix |
 |---|---|
+| `install.ps1` prints "Found python at `...\WindowsApps\python.exe`" or fails with "cannot recognize ...venv\Scripts\python.exe" | That PATH is the **Windows Store stub**, not real Python. Install Python 3.12 from <https://www.python.org/downloads/> (check "Add python.exe to PATH") or run `winget install Python.Python.3.12`, then open a fresh terminal and re-run the installer. |
 | Log: `No module named httpx` | `"command"` is pointing at the wrong Python. Run `<MCP_DIR>/.venv/Scripts/python.exe -c "import httpx, mcp; print('ok')"` — if it errors, rebuild the venv (delete `.venv/` and re-run the install script). |
 | Log: `Server transport closed unexpectedly` | Almost always a crash in the Python process. Scroll up in the log for the traceback. |
 | No hammer / tools icon in Claude Desktop | The config JSON is malformed or the file isn't at the expected path. Paste the config into a JSON linter. |
