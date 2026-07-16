@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>葛蘭碧八大法則 × 台積電(2330)・臻鼎-KY(4958) 實戰圖解</title>
+<style>
+:root{
+  color-scheme:light;
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --up:#e34948; --dn:#008300; --ma20:#2a78d6; --ma60:#eda100;
+  --buy:#4a3aa7; --sell:#eb6834; --crit:#d03b3b; --accent:#2a78d6;
+  --wash:rgba(42,120,214,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --up:#e66767; --dn:#008300; --ma20:#3987e5; --ma60:#c98500;
+    --buy:#9085e9; --sell:#d95926; --crit:#d03b3b; --accent:#3987e5;
+    --wash:rgba(57,135,229,.12);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --up:#e66767; --dn:#008300; --ma20:#3987e5; --ma60:#c98500;
+  --buy:#9085e9; --sell:#d95926; --crit:#d03b3b; --accent:#3987e5;
+  --wash:rgba(57,135,229,.12);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--page); color:var(--ink);
+  font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  line-height:1.65; font-size:15px;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px 64px}
+a{color:var(--accent)}
+h1,h2,h3{line-height:1.3;text-wrap:balance;margin:0}
+.eyebrow{font-size:11px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;font-weight:600}
+header.hero{padding:44px 0 10px}
+header.hero h1{font-size:clamp(24px,4vw,34px);font-weight:700;margin:6px 0 10px}
+header.hero p.lede{color:var(--ink2);max-width:46em;margin:0 0 16px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:12px;color:var(--ink2);background:var(--surface);border:1px solid var(--border);
+  border-radius:999px;padding:3px 12px;white-space:nowrap}
+.chip b{color:var(--ink);font-weight:600}
+section{margin-top:44px}
+.sec-head{margin-bottom:16px}
+.sec-head h2{font-size:20px;font-weight:700;margin-top:4px}
+.sec-head p{color:var(--ink2);margin:6px 0 0;max-width:52em}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+/* ---------- schematic ---------- */
+.schema-grid{display:grid;grid-template-columns:1fr;gap:16px}
+.schema-svg-box{overflow-x:auto}
+.schema-svg-box svg{display:block;min-width:680px;width:100%;height:auto}
+.rule-groups{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.rule-groups{grid-template-columns:1fr}}
+.rule-group h3{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.rule-group h3 .keyline{width:18px;height:0;border-top:3px solid;border-radius:2px}
+.rule-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:480px){.rule-cards{grid-template-columns:1fr}}
+button.rule-card{
+  text-align:left;font:inherit;color:inherit;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;
+  display:flex;gap:10px;align-items:flex-start;transition:border-color .15s, background .15s;
+}
+button.rule-card:hover{background:var(--wash)}
+button.rule-card:focus-visible,button.rule-card[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:1px}
+button.rule-card[aria-pressed="true"]{background:var(--wash)}
+.rnum{flex:0 0 auto;width:24px;height:24px;border-radius:50%;color:#fff;font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;margin-top:2px}
+.rnum.buy{background:var(--buy)} .rnum.sell{background:var(--sell)}
+.rule-card .t{font-size:14px;font-weight:700;line-height:1.35}
+.rule-card .s{font-size:12px;color:var(--ink2);line-height:1.5;margin-top:2px}
+.rule-detail{border-left:3px solid var(--accent);background:var(--wash);border-radius:0 10px 10px 0;
+  padding:12px 16px;font-size:14px;color:var(--ink)}
+.rule-detail .where{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.rule-detail .where a{font-size:12px;text-decoration:none;border:1px solid var(--border);
+  background:var(--surface);border-radius:999px;padding:2px 10px;color:var(--ink2)}
+.rule-detail .where a b{color:var(--ink)}
+/* schematic svg marks */
+.sm-marker{cursor:pointer}
+.sm-marker circle.dot{transition:opacity .15s}
+.sm-marker text{fill:#fff;font-size:13px;font-weight:700;pointer-events:none}
+.sm-marker.dim circle.dot{opacity:.25}
+.sm-marker.dim text{opacity:.25}
+.sm-marker.hot circle.dot{stroke-width:3}
+.sm-label{font-size:12px;fill:var(--ink2)}
+/* ---------- filters ---------- */
+.filter-row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:10px 16px;margin-bottom:18px;position:sticky;top:0;z-index:5}
+.filter-row .flabel{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;padding:5px 14px;border:0;background:transparent;color:var(--ink2);cursor:pointer}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button[aria-pressed="true"]{background:var(--wash);color:var(--ink);font-weight:700}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+label.tog{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);cursor:pointer}
+label.tog input{accent-color:var(--accent)}
+.keyswatch{display:inline-block;width:14px;height:0;border-top:3px solid;border-radius:2px}
+.keyrect{display:inline-block;width:10px;height:10px;border-radius:2px}
+/* ---------- stock chart cards ---------- */
+.stock-card{margin-bottom:26px}
+.stock-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:4px}
+.stock-head h3{font-size:18px;font-weight:700}
+.stock-head .code{color:var(--muted);font-size:13px}
+.stock-head .px{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.stock-head .pxmeta{font-size:12px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink2);margin:6px 0 10px}
+.legend .li{display:inline-flex;align-items:center;gap:6px}
+.chart-scroll{overflow-x:auto;position:relative}
+.chart-scroll svg{display:block;min-width:760px;width:100%;height:auto}
+.tooltip{
+  position:absolute;pointer-events:none;z-index:6;display:none;min-width:168px;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  box-shadow:0 4px 18px rgba(0,0,0,.14);padding:10px 12px;font-size:12px;color:var(--ink2);
+}
+.tooltip .tdate{font-weight:700;color:var(--ink);font-size:12.5px;margin-bottom:4px}
+.tooltip table{border-collapse:collapse}
+.tooltip td{padding:1px 0;font-variant-numeric:tabular-nums}
+.tooltip td.k{color:var(--muted);padding-right:12px}
+.tooltip td.v{color:var(--ink);font-weight:600;text-align:right}
+.tooltip .lk{display:inline-block;width:12px;border-top:3px solid;border-radius:2px;margin-right:5px;vertical-align:middle}
+.sig-strip{margin-top:12px}
+.sig-strip .sig-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.sig-chips button{
+  font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--border);
+  background:var(--surface);color:var(--ink2);border-radius:999px;padding:3px 11px;
+  display:inline-flex;gap:6px;align-items:center;
+}
+.sig-chips button .n{width:16px;height:16px;border-radius:50%;color:#fff;font-size:10.5px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center}
+.sig-chips button[aria-pressed="true"]{border-color:var(--accent);color:var(--ink);background:var(--wash)}
+.sig-chips button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sig-note{font-size:13.5px;color:var(--ink);background:var(--wash);border-left:3px solid var(--accent);
+  border-radius:0 10px 10px 0;padding:10px 14px}
+.sig-note .when{color:var(--muted);font-size:12px}
+details.tblview{margin-top:14px}
+details.tblview summary{cursor:pointer;font-size:13px;color:var(--ink2);font-weight:600}
+details.tblview summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tbl-scroll{overflow-x:auto;margin-top:10px}
+table.data{border-collapse:collapse;font-size:12.5px;min-width:560px;width:100%}
+table.data th{color:var(--muted);font-weight:600;text-align:right;padding:6px 10px;border-bottom:1px solid var(--axis);white-space:nowrap}
+table.data td{padding:5px 10px;text-align:right;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;color:var(--ink2)}
+table.data th:first-child,table.data td:first-child{text-align:left}
+table.data td.strong{color:var(--ink);font-weight:600}
+/* svg chart marks */
+.gridline{stroke:var(--grid);stroke-width:1}
+.axisline{stroke:var(--axis);stroke-width:1}
+.axistext{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.dlabel{fill:var(--ink2);font-size:11px}
+.crossline{stroke:var(--muted);stroke-width:1;stroke-dasharray:none}
+.sigmark{cursor:pointer}
+.sigmark text{fill:#fff;font-size:10px;font-weight:700;pointer-events:none}
+.sigmark.flash circle.dot{stroke:var(--ink);stroke-width:3}
+.sigmark:focus{outline:none}
+.sigmark:focus circle.dot{stroke:var(--ink);stroke-width:3}
+/* ---------- advice ---------- */
+.advice-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:860px){.advice-grid{grid-template-columns:1fr}}
+.advice-card h3{font-size:17px;font-weight:700}
+.advice-card .snap{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--ink2);
+  margin:10px 0 4px;font-variant-numeric:tabular-nums}
+.advice-card .snap b{color:var(--ink)}
+.advice-flex{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.ladder-box{flex:0 0 296px}
+.ladder-box svg{display:block;width:296px;height:auto}
+.advice-text{flex:1 1 300px;min-width:260px}
+.advice-text h4{font-size:13px;margin:10px 0 4px;display:flex;align-items:center;gap:7px}
+.advice-text h4 .keyrect{margin-top:0}
+.advice-text ul{margin:0;padding-left:20px;font-size:13.5px;color:var(--ink2)}
+.advice-text li{margin:4px 0}
+.advice-text li b{color:var(--ink);font-variant-numeric:tabular-nums}
+.ref{font-size:11px;color:var(--muted)}
+.lad-band-label{font-size:11px;fill:var(--ink2)}
+.lad-price{font-size:11px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.callout{margin-top:18px;border:1px solid var(--border);border-radius:10px;padding:12px 16px;
+  font-size:13px;color:var(--ink2);display:flex;gap:10px;align-items:flex-start}
+.callout .ico{flex:0 0 auto;font-weight:700;color:var(--crit)}
+footer{margin-top:56px;border-top:1px solid var(--grid);padding-top:18px;font-size:12px;color:var(--muted)}
+footer p{margin:4px 0;max-width:64em}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important;animation:none !important}
+}
+@keyframes pulse{0%{stroke-width:2}50%{stroke-width:5}100%{stroke-width:2}}
+.sigmark.flash circle.dot{animation:pulse 1.1s ease-in-out 2}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Granville&rsquo;s Eight Rules · 移動平均線實戰教學</div>
+  <h1>葛蘭碧八大法則 × 台股實戰圖解</h1>
+  <p class="lede">葛蘭碧（Joseph Granville）以「股價與移動平均線的相對位置」歸納出四個買進訊號與四個賣出訊號。
+  本頁先以互動示意圖說明八大法則，再用<b>台積電（2330）</b>與<b>臻鼎-KY（4958）</b>過去一年的<b>真實日 K 線</b>逐一對照，
+  最後給出以法則推導的參考買賣價位。</p>
+  <div class="chips">
+    <span class="chip">資料區間 <b>2025/04/01 – 2026/04/01</b>（244 個交易日）</span>
+    <span class="chip">訊號基準 <b>20 日均線（月線）</b>，以 60 日均線（季線）為趨勢濾網</span>
+    <span class="chip">資料來源 <b>Yahoo Finance 實際成交資料</b>（5 分 K 聚合為日 K）</span>
+  </div>
+</header>
+
+<section id="rules">
+  <div class="sec-head">
+    <div class="eyebrow">Section 01</div>
+    <h2>八大法則互動示意圖</h2>
+    <p>藍色粗線是移動平均線（MA），黑色細線是股價。<b>點選圖上的編號、或下方的法則卡片</b>，
+    對應的位置會亮起並顯示說明；選擇 ④ 或 ⑧ 會同時顯示「乖離過大」的參考區帶。</p>
+  </div>
+  <div class="card schema-grid">
+    <div class="schema-svg-box" id="schemaBox"></div>
+    <div class="rule-detail" id="ruleDetail" aria-live="polite"></div>
+    <div class="rule-groups">
+      <div class="rule-group">
+        <h3><span class="keyline" style="border-color:var(--buy)"></span>買進訊號（①〜④）</h3>
+        <div class="rule-cards" id="buyCards"></div>
+      </div>
+      <div class="rule-group">
+        <h3><span class="keyline" style="border-color:var(--sell)"></span>賣出訊號（⑤〜⑧）</h3>
+        <div class="rule-cards" id="sellCards"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="charts">
+  <div class="sec-head">
+    <div class="eyebrow">Section 02</div>
+    <h2>真實 K 線對照：訊號都發生在哪裡？</h2>
+    <p>下圖為兩檔個股過去一年的實際日 K 線（未還原除權息）。圖上的圓形編號是依八大法則
+    <b>以 20 日均線為基準、由演算法在真實資料上偵測出的訊號</b>；將游標移到 K 棒上可看逐日明細，
+    點選訊號或下方「實戰解讀」的日期可看該訊號的前因後果。</p>
+  </div>
+
+  <div class="filter-row" role="group" aria-label="圖表篩選">
+    <span class="flabel">區間</span>
+    <span class="seg" id="rangeSeg">
+      <button type="button" data-range="12" aria-pressed="true">近一年</button>
+      <button type="button" data-range="6" aria-pressed="false">近六個月</button>
+      <button type="button" data-range="3" aria-pressed="false">近三個月</button>
+    </span>
+    <span class="flabel">顯示</span>
+    <label class="tog"><input type="checkbox" id="togMa20" checked>
+      <span class="keyswatch" style="border-color:var(--ma20)"></span>月線 MA20</label>
+    <label class="tog"><input type="checkbox" id="togMa60" checked>
+      <span class="keyswatch" style="border-color:var(--ma60)"></span>季線 MA60</label>
+    <label class="tog"><input type="checkbox" id="togBuy" checked>
+      <span class="keyrect" style="background:var(--buy)"></span>買進訊號</label>
+    <label class="tog"><input type="checkbox" id="togSell" checked>
+      <span class="keyrect" style="background:var(--sell)"></span>賣出訊號</label>
+  </div>
+
+  <div class="card stock-card" id="card2330"></div>
+  <div class="card stock-card" id="card4958"></div>
+</section>
+
+<section id="advice">
+  <div class="sec-head">
+    <div class="eyebrow">Section 03</div>
+    <h2>依法則推導的參考買賣價位</h2>
+    <p>以資料最後交易日 <b>2026/04/01 收盤</b>為基準，把八大法則換算成具體價位區間。
+    價格階梯由上而下依序為：停利／壓力 → 目前位置 → 買進區 → 停損。</p>
+  </div>
+  <div class="advice-grid" id="adviceGrid"></div>
+  <div class="callout">
+    <span class="ico">⚠ 風險提示</span>
+    <span>本頁為技術分析<b>教學示範</b>，所有價位僅為法則的機械式換算，非投資建議。
+    葛蘭碧法則屬趨勢跟隨工具：盤整期的①⑤訊號容易反覆（如台積電 2025/12 的⑤⑥訊號其後即被上漲行情否定），
+    實務上應搭配長天期均線方向、成交量與基本面綜合判斷，並嚴設停損。</span>
+  </div>
+</section>
+
+<footer>
+  <p><b>資料說明</b>：股價資料取自 Yahoo Finance 實際成交紀錄（透過開源資料庫
+  <a href="https://github.com/voidful/tw_stocker" rel="noopener">voidful/tw_stocker</a> 之 5 分 K 存檔聚合為日 K），
+  區間 2025/04/01 – 2026/04/01（該資料庫 K 線存檔最後更新日），為未還原除權息之原始價格；
+  成交量單位為「張」（1 張 = 1,000 股）。頁面產生日期 2026/07/16。</p>
+  <p><b>免責聲明</b>：本頁內容僅供技術分析教學與研究，不構成任何證券之買賣要約、招攬或投資建議。
+  投資人應自行判斷並承擔投資風險。</p>
+</footer>
+
+</div>
+<script>
+"use strict";
+/* ================= data ================= */
+const RULES = [
+ {id:1,side:"buy", name:"① 突破買進",    short:"均線走平翻揚，股價向上突破均線",
+  long:"移動平均線從下跌逐漸走平、甚至開始翻揚，股價帶量由下往上突破均線——空頭結束、多頭啟動的第一個買點。",
+  tip:"確認重點：均線斜率要先走平，帶量突破才可靠。"},
+ {id:2,side:"buy", name:"② 假跌破買進",  short:"跌破上升均線後迅速站回",
+  long:"股價短暫跌破仍在上升的均線，但很快（數日內）收回均線之上。這通常是主力洗盤或市場雜訊，趨勢未變，是順勢加碼的買點。",
+  tip:"確認重點：均線必須仍在上升；跌破期間量縮更佳。"},
+ {id:3,side:"buy", name:"③ 回檔支撐買進",short:"回檔觸及均線不破，再度上攻",
+  long:"多頭行進中股價回檔修正，接近或觸及上升均線即獲支撐反彈、未曾跌破。均線扮演「移動支撐」，是風險報酬比最好的買點之一。",
+  tip:"確認重點：觸線當日或次日收紅、量能回穩。"},
+ {id:4,side:"buy", name:"④ 跌深反彈買進",short:"暴跌遠離均線，負乖離過大",
+  long:"股價急跌、大幅遠離下方均線，負乖離擴大到極端（本頁以 −10%〜−15% 為門檻），跌深就是最大利多，容易出現技術性反彈。屬於逆勢短線買點。",
+  tip:"確認重點：僅適合短線搶反彈，反彈至均線附近應先減碼。"},
+ {id:5,side:"sell",name:"⑤ 跌破賣出",    short:"均線走平下彎，股價向下跌破均線",
+  long:"移動平均線從上漲轉為走平、下彎，股價由上往下跌破均線——多頭結束的第一個賣出（出場）訊號。",
+  tip:"確認重點：均線斜率翻負且跌破後無法迅速收復。"},
+ {id:6,side:"sell",name:"⑥ 假突破賣出",  short:"突破下降均線後迅速跌回",
+  long:"股價短暫突破仍在下降的均線，但很快又跌回均線之下。這是空頭中的「誘多」，反彈結束，是順勢出場或放空點。",
+  tip:"確認重點：均線仍在下降；突破未帶量即為警訊。"},
+ {id:7,side:"sell",name:"⑦ 反彈遇壓賣出",short:"反彈觸及均線不過，再度下跌",
+  long:"空頭行進中股價反彈，接近或觸及下降均線即遇壓回落、未能站上。均線扮演「移動壓力」，是空頭中最穩的減碼／放空點。",
+  tip:"確認重點：觸線當日或次日收黑。"},
+ {id:8,side:"sell",name:"⑧ 漲多回跌賣出",short:"暴漲遠離均線，正乖離過大",
+  long:"股價急漲、大幅遠離上方均線，正乖離擴大到極端（本頁以 +10%〜+15% 為門檻），短線過熱、隨時可能均值回歸。屬於逆勢短線停利點。",
+  tip:"確認重點：適合分批停利，而非全數反手放空。"},
+];
+const STOCKS = {
+ "2330":{
+   name:"台積電", code:"2330.TW", tick:1, unit:"元",
+   rows:[{"d":"2025-04-01","o":927.0,"h":946.0,"l":925.0,"c":942.0,"v":24769306,"ma5":952.2,"ma20":974.85,"ma60":1051.03},{"d":"2025-04-02","o":949.0,"h":952.0,"l":938.0,"c":942.0,"v":17304164,"ma5":943.2,"ma20":970.7,"ma60":1048.65},{"d":"2025-04-07","o":848.0,"h":848.0,"l":848.0,"c":848.0,"v":15207852,"ma5":920.8,"ma20":962.35,"ma60":1044.62},{"d":"2025-04-08","o":797.0,"h":843.0,"l":797.0,"c":817.0,"v":90688917,"ma5":893.4,"ma20":953.2,"ma60":1040.15},{"d":"2025-04-09","o":809.0,"h":826.0,"l":780.0,"c":792.0,"v":97266929,"ma5":868.2,"ma20":942.95,"ma60":1035.35},{"d":"2025-04-10","o":863.0,"h":863.0,"l":863.0,"c":863.0,"v":11145732,"ma5":852.4,"ma20":937.55,"ma60":1032.07},{"d":"2025-04-11","o":848.0,"h":885.0,"l":836.0,"c":884.0,"v":57751209,"ma5":840.8,"ma20":932.65,"ma60":1028.8},{"d":"2025-04-14","o":895.0,"h":903.0,"l":867.0,"c":868.0,"v":52671076,"ma5":844.8,"ma20":927.5,"ma60":1024.52},{"d":"2025-04-15","o":874.0,"h":879.0,"l":865.0,"c":878.0,"v":20902553,"ma5":857.0,"ma20":923.25,"ma60":1020.15},{"d":"2025-04-16","o":867.0,"h":869.0,"l":852.0,"c":856.0,"v":35618662,"ma5":869.8,"ma20":917.5,"ma60":1015.92},{"d":"2025-04-17","o":849.0,"h":856.0,"l":842.0,"c":851.0,"v":24180099,"ma5":867.4,"ma20":911.6,"ma60":1011.68},{"d":"2025-04-18","o":853.0,"h":858.0,"l":850.0,"c":851.0,"v":15121768,"ma5":860.8,"ma20":906.55,"ma60":1007.37},{"d":"2025-04-21","o":844.0,"h":847.0,"l":832.0,"c":834.0,"v":16914787,"ma5":854.0,"ma20":899.15,"ma60":1003.27},{"d":"2025-04-22","o":826.0,"h":829.0,"l":818.0,"c":822.0,"v":21602970,"ma5":842.8,"ma20":891.6,"ma60":998.97},{"d":"2025-04-23","o":853.0,"h":870.0,"l":848.0,"c":866.0,"v":25436286,"ma5":844.8,"ma20":886.25,"ma60":995.65},{"d":"2025-04-24","o":886.0,"h":886.0,"l":859.0,"c":863.0,"v":19736676,"ma5":847.2,"ma20":879.8,"ma60":991.62},{"d":"2025-04-25","o":900.0,"h":901.0,"l":886.0,"c":888.0,"v":23722090,"ma5":854.6,"ma20":874.85,"ma60":987.83},{"d":"2025-04-28","o":898.0,"h":898.0,"l":893.0,"c":896.0,"v":13485452,"ma5":867.0,"ma20":871.65,"ma60":984.02},{"d":"2025-04-29","o":897.0,"h":902.0,"l":893.0,"c":900.0,"v":18887619,"ma5":882.6,"ma20":868.95,"ma60":980.27},{"d":"2025-04-30","o":901.0,"h":908.0,"l":899.0,"c":905.0,"v":39018808,"ma5":890.4,"ma20":868.3,"ma60":976.35},{"d":"2025-05-02","o":938.0,"h":945.0,"l":932.0,"c":945.0,"v":134113748,"ma5":906.8,"ma20":868.45,"ma60":974.18},{"d":"2025-05-05","o":956.0,"h":957.0,"l":923.0,"c":937.0,"v":312373670,"ma5":916.6,"ma20":868.2,"ma60":971.63},{"d":"2025-05-06","o":916.0,"h":930.0,"l":916.0,"c":924.0,"v":213774496,"ma5":922.2,"ma20":872.0,"ma60":968.53},{"d":"2025-05-07","o":925.0,"h":932.0,"l":911.0,"c":920.0,"v":215531685,"ma5":926.2,"ma20":877.15,"ma60":965.45},{"d":"2025-05-08","o":933.0,"h":939.0,"l":928.0,"c":933.0,"v":175360210,"ma5":931.8,"ma20":884.2,"ma60":962.33},{"d":"2025-05-09","o":938.0,"h":949.0,"l":934.0,"c":949.0,"v":287563140,"ma5":932.6,"ma20":888.5,"ma60":959.73},{"d":"2025-05-12","o":954.0,"h":962.0,"l":952.0,"c":956.0,"v":166915250,"ma5":936.4,"ma20":892.1,"ma60":957.17},{"d":"2025-05-13","o":990.0,"h":990.0,"l":972.0,"c":973.0,"v":278561790,"ma5":946.2,"ma20":897.35,"ma60":954.97},{"d":"2025-05-14","o":990.0,"h":997.0,"l":988.0,"c":997.0,"v":328181350,"ma5":961.6,"ma20":903.3,"ma60":953.5},{"d":"2025-05-15","o":1000.0,"h":1000.0,"l":993.0,"c":995.0,"v":162019420,"ma5":974.0,"ma20":910.25,"ma60":952.33},{"d":"2025-05-16","o":991.0,"h":996.0,"l":989.0,"c":995.0,"v":115861720,"ma5":983.2,"ma20":917.45,"ma60":950.83},{"d":"2025-05-19","o":993.0,"h":994.0,"l":980.0,"c":983.0,"v":155956780,"ma5":988.6,"ma20":924.05,"ma60":949.05},{"d":"2025-05-20","o":991.0,"h":994.0,"l":978.0,"c":980.0,"v":139469430,"ma5":990.0,"ma20":931.35,"ma60":947.22},{"d":"2025-05-21","o":986.0,"h":999.0,"l":983.0,"c":998.0,"v":199686720,"ma5":990.2,"ma20":940.15,"ma60":945.85},{"d":"2025-05-22","o":988.0,"h":988.0,"l":979.0,"c":982.0,"v":126438710,"ma5":987.6,"ma20":945.95,"ma60":944.05},{"d":"2025-05-23","o":993.0,"h":993.0,"l":975.0,"c":980.0,"v":157759340,"ma5":984.6,"ma20":951.8,"ma60":942.47},{"d":"2025-05-26","o":975.0,"h":984.0,"l":975.0,"c":977.0,"v":150476170,"ma5":983.4,"ma20":956.25,"ma60":941.17},{"d":"2025-05-27","o":971.0,"h":975.0,"l":961.0,"c":964.0,"v":208518740,"ma5":980.2,"ma20":959.65,"ma60":939.57},{"d":"2025-05-28","o":984.0,"h":985.0,"l":967.0,"c":975.0,"v":184977320,"ma5":975.6,"ma20":963.4,"ma60":938.32},{"d":"2025-05-29","o":986.0,"h":986.0,"l":967.0,"c":970.0,"v":278051322,"ma5":973.2,"ma20":966.65,"ma60":937.65},{"d":"2025-06-02","o":958.0,"h":961.0,"l":946.0,"c":949.0,"v":238654680,"ma5":967.0,"ma20":966.85,"ma60":936.72},{"d":"2025-06-03","o":960.0,"h":965.0,"l":953.0,"c":954.0,"v":158937090,"ma5":962.4,"ma20":967.7,"ma60":935.53},{"d":"2025-06-04","o":974.0,"h":987.0,"l":970.0,"c":986.0,"v":282608140,"ma5":966.8,"ma20":970.8,"ma60":935.05},{"d":"2025-06-05","o":1000.0,"h":1000.0,"l":991.0,"c":993.0,"v":173872760,"ma5":970.4,"ma20":974.45,"ma60":934.93},{"d":"2025-06-06","o":997.0,"h":997.0,"l":991.0,"c":993.0,"v":100215040,"ma5":975.0,"ma20":977.45,"ma60":934.87},{"d":"2025-06-09","o":1005.0,"h":1010.0,"l":1000.0,"c":1005.0,"v":170423210,"ma5":986.2,"ma20":980.25,"ma60":935.43},{"d":"2025-06-10","o":1025.0,"h":1050.0,"l":1020.0,"c":1045.0,"v":416592010,"ma5":1004.4,"ma20":984.7,"ma60":936.48},{"d":"2025-06-11","o":1065.0,"h":1070.0,"l":1055.0,"c":1065.0,"v":252120770,"ma5":1020.2,"ma20":989.3,"ma60":938.05},{"d":"2025-06-12","o":1055.0,"h":1060.0,"l":1045.0,"c":1050.0,"v":210956690,"ma5":1031.6,"ma20":991.95,"ma60":939.5},{"d":"2025-06-13","o":1040.0,"h":1040.0,"l":1025.0,"c":1025.0,"v":216049430,"ma5":1038.0,"ma20":993.45,"ma60":940.4},{"d":"2025-06-16","o":1030.0,"h":1030.0,"l":1015.0,"c":1025.0,"v":190858200,"ma5":1042.0,"ma20":994.95,"ma60":941.33},{"d":"2025-06-17","o":1040.0,"h":1050.0,"l":1035.0,"c":1040.0,"v":203950520,"ma5":1041.0,"ma20":997.8,"ma60":942.8},{"d":"2025-06-18","o":1040.0,"h":1055.0,"l":1030.0,"c":1055.0,"v":364825930,"ma5":1039.0,"ma20":1001.55,"ma60":944.02},{"d":"2025-06-19","o":1045.0,"h":1045.0,"l":1030.0,"c":1035.0,"v":203573780,"ma5":1036.0,"ma20":1003.4,"ma60":945.05},{"d":"2025-06-20","o":1030.0,"h":1040.0,"l":1025.0,"c":1035.0,"v":168096320,"ma5":1038.0,"ma20":1006.05,"ma60":946.08},{"d":"2025-06-23","o":1025.0,"h":1030.0,"l":1015.0,"c":1030.0,"v":272301160,"ma5":1039.0,"ma20":1008.55,"ma60":946.72},{"d":"2025-06-24","o":1045.0,"h":1050.0,"l":1040.0,"c":1050.0,"v":193892660,"ma5":1041.0,"ma20":1012.2,"ma60":947.77},{"d":"2025-06-25","o":1060.0,"h":1070.0,"l":1055.0,"c":1070.0,"v":328515350,"ma5":1044.0,"ma20":1017.5,"ma60":949.6},{"d":"2025-06-26","o":1075.0,"h":1080.0,"l":1065.0,"c":1070.0,"v":278959430,"ma5":1051.0,"ma20":1022.25,"ma60":951.53},{"d":"2025-06-27","o":1070.0,"h":1075.0,"l":1060.0,"c":1070.0,"v":252003620,"ma5":1058.0,"ma20":1027.25,"ma60":954.07},{"d":"2025-06-30","o":1075.0,"h":1080.0,"l":1070.0,"c":1075.0,"v":129131632,"ma5":1067.0,"ma20":1033.55,"ma60":956.28},{"d":"2025-07-01","o":1080.0,"h":1095.0,"l":1075.0,"c":1085.0,"v":226086012,"ma5":1074.0,"ma20":1040.1,"ma60":958.67},{"d":"2025-07-02","o":1075.0,"h":1080.0,"l":1070.0,"c":1075.0,"v":83162930,"ma5":1075.0,"ma20":1044.55,"ma60":962.45},{"d":"2025-07-03","o":1105.0,"h":1105.0,"l":1090.0,"c":1095.0,"v":125669604,"ma5":1080.0,"ma20":1049.65,"ma60":967.08},{"d":"2025-07-04","o":1095.0,"h":1100.0,"l":1080.0,"c":1080.0,"v":52637807,"ma5":1082.0,"ma20":1054.0,"ma60":971.88},{"d":"2025-07-07","o":1080.0,"h":1085.0,"l":1070.0,"c":1075.0,"v":12028939,"ma5":1082.0,"ma20":1057.5,"ma60":975.42},{"d":"2025-07-08","o":1070.0,"h":1075.0,"l":1065.0,"c":1065.0,"v":16501856,"ma5":1078.0,"ma20":1058.5,"ma60":978.43},{"d":"2025-07-09","o":1070.0,"h":1090.0,"l":1065.0,"c":1080.0,"v":14132629,"ma5":1079.0,"ma20":1059.25,"ma60":981.97},{"d":"2025-07-10","o":1095.0,"h":1100.0,"l":1090.0,"c":1095.0,"v":14117977,"ma5":1079.0,"ma20":1061.5,"ma60":985.58},{"d":"2025-07-11","o":1095.0,"h":1100.0,"l":1090.0,"c":1100.0,"v":14659012,"ma5":1083.0,"ma20":1065.25,"ma60":989.65},{"d":"2025-07-14","o":1100.0,"h":1100.0,"l":1085.0,"c":1090.0,"v":18510248,"ma5":1086.0,"ma20":1068.5,"ma60":993.63},{"d":"2025-07-15","o":1095.0,"h":1115.0,"l":1090.0,"c":1110.0,"v":41171583,"ma5":1095.0,"ma20":1072.0,"ma60":997.95},{"d":"2025-07-16","o":1120.0,"h":1130.0,"l":1120.0,"c":1130.0,"v":22846046,"ma5":1105.0,"ma20":1075.75,"ma60":1002.88},{"d":"2025-07-17","o":1130.0,"h":1135.0,"l":1115.0,"c":1125.0,"v":22757734,"ma5":1111.0,"ma20":1080.25,"ma60":1007.93},{"d":"2025-07-18","o":1155.0,"h":1160.0,"l":1145.0,"c":1150.0,"v":30983321,"ma5":1121.0,"ma20":1086.0,"ma60":1012.67},{"d":"2025-07-21","o":1145.0,"h":1150.0,"l":1135.0,"c":1150.0,"v":19946386,"ma5":1133.0,"ma20":1092.0,"ma60":1017.45},{"d":"2025-07-22","o":1145.0,"h":1160.0,"l":1130.0,"c":1135.0,"v":42047764,"ma5":1138.0,"ma20":1096.25,"ma60":1021.57},{"d":"2025-07-23","o":1140.0,"h":1145.0,"l":1135.0,"c":1140.0,"v":22148266,"ma5":1140.0,"ma20":1099.75,"ma60":1025.63},{"d":"2025-07-24","o":1150.0,"h":1155.0,"l":1145.0,"c":1145.0,"v":7604108,"ma5":1144.0,"ma20":1103.5,"ma60":1029.72},{"d":"2025-07-25","o":1150.0,"h":1155.0,"l":1140.0,"c":1140.0,"v":16001296,"ma5":1142.0,"ma20":1107.0,"ma60":1033.63},{"d":"2025-07-28","o":1155.0,"h":1160.0,"l":1145.0,"c":1150.0,"v":9786474,"ma5":1142.0,"ma20":1110.75,"ma60":1037.05},{"d":"2025-07-29","o":1145.0,"h":1145.0,"l":1125.0,"c":1135.0,"v":26280922,"ma5":1142.0,"ma20":1113.25,"ma60":1040.35},{"d":"2025-07-30","o":1150.0,"h":1160.0,"l":1145.0,"c":1145.0,"v":28342384,"ma5":1143.0,"ma20":1116.75,"ma60":1044.03},{"d":"2025-07-31","o":1160.0,"h":1165.0,"l":1155.0,"c":1160.0,"v":19549993,"ma5":1146.0,"ma20":1120.0,"ma60":1048.03},{"d":"2025-08-01","o":1145.0,"h":1150.0,"l":1130.0,"c":1140.0,"v":34454714,"ma5":1146.0,"ma20":1123.0,"ma60":1051.48},{"d":"2025-08-04","o":1130.0,"h":1135.0,"l":1125.0,"c":1135.0,"v":17983852,"ma5":1143.0,"ma20":1126.0,"ma60":1054.58},{"d":"2025-08-05","o":1145.0,"h":1150.0,"l":1140.0,"c":1150.0,"v":10684995,"ma5":1146.0,"ma20":1130.25,"ma60":1057.82},{"d":"2025-08-06","o":1130.0,"h":1135.0,"l":1125.0,"c":1125.0,"v":15715708,"ma5":1142.0,"ma20":1132.5,"ma60":1060.35},{"d":"2025-08-07","o":1160.0,"h":1180.0,"l":1155.0,"c":1180.0,"v":44965558,"ma5":1146.0,"ma20":1136.75,"ma60":1063.4},{"d":"2025-08-08","o":1180.0,"h":1185.0,"l":1170.0,"c":1170.0,"v":20184970,"ma5":1152.0,"ma20":1140.25,"ma60":1066.32},{"d":"2025-08-11","o":1170.0,"h":1195.0,"l":1165.0,"c":1185.0,"v":31120342,"ma5":1162.0,"ma20":1145.0,"ma60":1069.48},{"d":"2025-08-12","o":1180.0,"h":1190.0,"l":1170.0,"c":1185.0,"v":22736946,"ma5":1169.0,"ma20":1148.75,"ma60":1072.85},{"d":"2025-08-13","o":1185.0,"h":1200.0,"l":1185.0,"c":1200.0,"v":31187448,"ma5":1184.0,"ma20":1152.25,"ma60":1076.52},{"d":"2025-08-14","o":1185.0,"h":1190.0,"l":1175.0,"c":1180.0,"v":25432513,"ma5":1184.0,"ma20":1155.0,"ma60":1079.55},{"d":"2025-08-15","o":1175.0,"h":1185.0,"l":1170.0,"c":1175.0,"v":15840994,"ma5":1185.0,"ma20":1156.25,"ma60":1082.77},{"d":"2025-08-18","o":1170.0,"h":1185.0,"l":1170.0,"c":1180.0,"v":11376656,"ma5":1184.0,"ma20":1157.75,"ma60":1086.1},{"d":"2025-08-19","o":1180.0,"h":1185.0,"l":1175.0,"c":1185.0,"v":11587450,"ma5":1184.0,"ma20":1160.25,"ma60":1089.57},{"d":"2025-08-20","o":1165.0,"h":1165.0,"l":1135.0,"c":1135.0,"v":55161354,"ma5":1171.0,"ma20":1160.0,"ma60":1092.42},{"d":"2025-08-21","o":1140.0,"h":1155.0,"l":1140.0,"c":1155.0,"v":17244689,"ma5":1166.0,"ma20":1160.5,"ma60":1095.42},{"d":"2025-08-22","o":1155.0,"h":1155.0,"l":1140.0,"c":1140.0,"v":11788158,"ma5":1159.0,"ma20":1160.5,"ma60":1098.25},{"d":"2025-08-25","o":1165.0,"h":1180.0,"l":1160.0,"c":1170.0,"v":20558293,"ma5":1157.0,"ma20":1161.5,"ma60":1101.93},{"d":"2025-08-26","o":1165.0,"h":1185.0,"l":1160.0,"c":1180.0,"v":17757348,"ma5":1156.0,"ma20":1163.75,"ma60":1105.7},{"d":"2025-08-27","o":1190.0,"h":1190.0,"l":1180.0,"c":1185.0,"v":14802131,"ma5":1166.0,"ma20":1165.75,"ma60":1109.02},{"d":"2025-08-28","o":1185.0,"h":1185.0,"l":1170.0,"c":1175.0,"v":12389456,"ma5":1170.0,"ma20":1166.5,"ma60":1112.05},{"d":"2025-08-29","o":1180.0,"h":1185.0,"l":1165.0,"c":1165.0,"v":10257814,"ma5":1175.0,"ma20":1167.75,"ma60":1114.92},{"d":"2025-09-01","o":1150.0,"h":1165.0,"l":1145.0,"c":1155.0,"v":16401974,"ma5":1172.0,"ma20":1168.75,"ma60":1117.42},{"d":"2025-09-02","o":1170.0,"h":1175.0,"l":1155.0,"c":1155.0,"v":11453608,"ma5":1167.0,"ma20":1169.0,"ma60":1119.25},{"d":"2025-09-03","o":1155.0,"h":1160.0,"l":1145.0,"c":1155.0,"v":14052250,"ma5":1161.0,"ma20":1170.5,"ma60":1120.75},{"d":"2025-09-04","o":1170.0,"h":1175.0,"l":1160.0,"c":1160.0,"v":17668987,"ma5":1158.0,"ma20":1169.5,"ma60":1122.58},{"d":"2025-09-05","o":1175.0,"h":1180.0,"l":1170.0,"c":1170.0,"v":19400305,"ma5":1159.0,"ma20":1169.5,"ma60":1125.0},{"d":"2025-09-08","o":1195.0,"h":1195.0,"l":1180.0,"c":1190.0,"v":21059026,"ma5":1166.0,"ma20":1169.75,"ma60":1127.75},{"d":"2025-09-09","o":1195.0,"h":1200.0,"l":1190.0,"c":1200.0,"v":23706537,"ma5":1175.0,"ma20":1170.5,"ma60":1130.42},{"d":"2025-09-10","o":1220.0,"h":1230.0,"l":1215.0,"c":1230.0,"v":37459479,"ma5":1190.0,"ma20":1172.0,"ma60":1133.33},{"d":"2025-09-11","o":1255.0,"h":1260.0,"l":1235.0,"c":1235.0,"v":28133250,"ma5":1205.0,"ma20":1174.75,"ma60":1136.67},{"d":"2025-09-12","o":1255.0,"h":1260.0,"l":1250.0,"c":1260.0,"v":20586790,"ma5":1223.0,"ma20":1179.0,"ma60":1140.42},{"d":"2025-09-15","o":1260.0,"h":1260.0,"l":1250.0,"c":1255.0,"v":17125930,"ma5":1236.0,"ma20":1182.75,"ma60":1144.17},{"d":"2025-09-16","o":1265.0,"h":1285.0,"l":1260.0,"c":1280.0,"v":27021718,"ma5":1252.0,"ma20":1187.5,"ma60":1148.0},{"d":"2025-09-17","o":1270.0,"h":1275.0,"l":1265.0,"c":1265.0,"v":22429693,"ma5":1259.0,"ma20":1194.0,"ma60":1151.25},{"d":"2025-09-18","o":1275.0,"h":1280.0,"l":1265.0,"c":1280.0,"v":15593513,"ma5":1268.0,"ma20":1200.25,"ma60":1154.75},{"d":"2025-09-19","o":1285.0,"h":1290.0,"l":1270.0,"c":1280.0,"v":16344780,"ma5":1272.0,"ma20":1207.25,"ma60":1158.25},{"d":"2025-09-22","o":1270.0,"h":1295.0,"l":1270.0,"c":1295.0,"v":21885839,"ma5":1280.0,"ma20":1213.5,"ma60":1161.92},{"d":"2025-09-23","o":1320.0,"h":1340.0,"l":1315.0,"c":1340.0,"v":26703576,"ma5":1292.0,"ma20":1221.5,"ma60":1166.17},{"d":"2025-09-24","o":1350.0,"h":1355.0,"l":1325.0,"c":1340.0,"v":30159797,"ma5":1307.0,"ma20":1229.25,"ma60":1170.58},{"d":"2025-09-25","o":1320.0,"h":1330.0,"l":1320.0,"c":1325.0,"v":15519983,"ma5":1316.0,"ma20":1236.75,"ma60":1174.42},{"d":"2025-09-26","o":1310.0,"h":1315.0,"l":1295.0,"c":1300.0,"v":20230331,"ma5":1320.0,"ma20":1243.5,"ma60":1178.08},{"d":"2025-09-30","o":1310.0,"h":1320.0,"l":1310.0,"c":1320.0,"v":18221457,"ma5":1325.0,"ma20":1251.75,"ma60":1182.17},{"d":"2025-10-01","o":1325.0,"h":1350.0,"l":1325.0,"c":1330.0,"v":25966484,"ma5":1323.0,"ma20":1260.5,"ma60":1186.58},{"d":"2025-10-02","o":1360.0,"h":1370.0,"l":1355.0,"c":1365.0,"v":23473411,"ma5":1328.0,"ma20":1271.0,"ma60":1191.33},{"d":"2025-10-03","o":1365.0,"h":1400.0,"l":1365.0,"c":1395.0,"v":24513500,"ma5":1342.0,"ma20":1282.75,"ma60":1196.33},{"d":"2025-10-07","o":1420.0,"h":1445.0,"l":1420.0,"c":1440.0,"v":26229620,"ma5":1370.0,"ma20":1296.25,"ma60":1202.0},{"d":"2025-10-08","o":1410.0,"h":1420.0,"l":1405.0,"c":1420.0,"v":17459112,"ma5":1390.0,"ma20":1307.75,"ma60":1207.5},{"d":"2025-10-09","o":1440.0,"h":1455.0,"l":1430.0,"c":1440.0,"v":29145413,"ma5":1412.0,"ma20":1319.75,"ma60":1213.0},{"d":"2025-10-13","o":1390.0,"h":1420.0,"l":1390.0,"c":1420.0,"v":38676333,"ma5":1423.0,"ma20":1329.25,"ma60":1217.83},{"d":"2025-10-14","o":1455.0,"h":1460.0,"l":1420.0,"c":1425.0,"v":29585764,"ma5":1429.0,"ma20":1338.75,"ma60":1222.83},{"d":"2025-10-15","o":1435.0,"h":1465.0,"l":1425.0,"c":1460.0,"v":30422950,"ma5":1433.0,"ma20":1348.75,"ma60":1228.0},{"d":"2025-10-16","o":1465.0,"h":1495.0,"l":1465.0,"c":1490.0,"v":29156947,"ma5":1447.0,"ma20":1360.5,"ma60":1233.67},{"d":"2025-10-17","o":1455.0,"h":1465.0,"l":1450.0,"c":1455.0,"v":29068939,"ma5":1450.0,"ma20":1369.25,"ma60":1239.0},{"d":"2025-10-20","o":1460.0,"h":1495.0,"l":1455.0,"c":1485.0,"v":26575295,"ma5":1463.0,"ma20":1380.25,"ma60":1244.75},{"d":"2025-10-21","o":1485.0,"h":1500.0,"l":1480.0,"c":1485.0,"v":25527918,"ma5":1475.0,"ma20":1390.5,"ma60":1250.42},{"d":"2025-10-22","o":1460.0,"h":1470.0,"l":1455.0,"c":1470.0,"v":22568109,"ma5":1477.0,"ma20":1400.0,"ma60":1255.92},{"d":"2025-10-23","o":1440.0,"h":1455.0,"l":1435.0,"c":1450.0,"v":17426838,"ma5":1469.0,"ma20":1407.75,"ma60":1260.92},{"d":"2025-10-27","o":1500.0,"h":1500.0,"l":1485.0,"c":1490.0,"v":22519298,"ma5":1476.0,"ma20":1415.25,"ma60":1266.83},{"d":"2025-10-28","o":1480.0,"h":1490.0,"l":1470.0,"c":1475.0,"v":22157500,"ma5":1474.0,"ma20":1422.0,"ma60":1272.33},{"d":"2025-10-29","o":1495.0,"h":1515.0,"l":1490.0,"c":1505.0,"v":25086280,"ma5":1478.0,"ma20":1431.0,"ma60":1278.08},{"d":"2025-10-30","o":1515.0,"h":1520.0,"l":1500.0,"c":1505.0,"v":20682730,"ma5":1485.0,"ma20":1441.25,"ma60":1284.17},{"d":"2025-10-31","o":1515.0,"h":1525.0,"l":1510.0,"c":1520.0,"v":15151076,"ma5":1499.0,"ma20":1451.25,"ma60":1290.58},{"d":"2025-11-03","o":1510.0,"h":1520.0,"l":1490.0,"c":1495.0,"v":24175403,"ma5":1500.0,"ma20":1459.5,"ma60":1296.33},{"d":"2025-11-04","o":1520.0,"h":1525.0,"l":1495.0,"c":1500.0,"v":26411047,"ma5":1505.0,"ma20":1466.25,"ma60":1302.58},{"d":"2025-11-05","o":1480.0,"h":1485.0,"l":1455.0,"c":1465.0,"v":44167721,"ma5":1497.0,"ma20":1469.75,"ma60":1307.33},{"d":"2025-11-06","o":1470.0,"h":1480.0,"l":1470.0,"c":1475.0,"v":19243612,"ma5":1491.0,"ma20":1471.5,"ma60":1312.42},{"d":"2025-11-07","o":1460.0,"h":1465.0,"l":1455.0,"c":1460.0,"v":16202103,"ma5":1479.0,"ma20":1473.5,"ma60":1317.0},{"d":"2025-11-10","o":1470.0,"h":1485.0,"l":1465.0,"c":1485.0,"v":17601415,"ma5":1477.0,"ma20":1475.75,"ma60":1322.0},{"d":"2025-11-11","o":1490.0,"h":1495.0,"l":1465.0,"c":1465.0,"v":17498892,"ma5":1470.0,"ma20":1478.0,"ma60":1326.42},{"d":"2025-11-12","o":1470.0,"h":1485.0,"l":1460.0,"c":1485.0,"v":15641716,"ma5":1474.0,"ma20":1481.0,"ma60":1331.5},{"d":"2025-11-13","o":1460.0,"h":1470.0,"l":1460.0,"c":1465.0,"v":15088989,"ma5":1472.0,"ma20":1481.25,"ma60":1336.33},{"d":"2025-11-14","o":1425.0,"h":1440.0,"l":1425.0,"c":1435.0,"v":20552002,"ma5":1467.0,"ma20":1478.5,"ma60":1340.58},{"d":"2025-11-17","o":1450.0,"h":1460.0,"l":1445.0,"c":1450.0,"v":15583300,"ma5":1460.0,"ma20":1478.25,"ma60":1345.0},{"d":"2025-11-18","o":1435.0,"h":1435.0,"l":1405.0,"c":1415.0,"v":37852076,"ma5":1450.0,"ma20":1474.75,"ma60":1349.67},{"d":"2025-11-19","o":1400.0,"h":1415.0,"l":1395.0,"c":1400.0,"v":27756054,"ma5":1433.0,"ma20":1470.5,"ma60":1353.75},{"d":"2025-11-20","o":1450.0,"h":1460.0,"l":1440.0,"c":1460.0,"v":19561442,"ma5":1432.0,"ma20":1470.0,"ma60":1359.08},{"d":"2025-11-21","o":1395.0,"h":1405.0,"l":1385.0,"c":1395.0,"v":47459246,"ma5":1424.0,"ma20":1467.25,"ma60":1362.83},{"d":"2025-11-24","o":1400.0,"h":1405.0,"l":1380.0,"c":1385.0,"v":39483405,"ma5":1411.0,"ma20":1462.0,"ma60":1366.25},{"d":"2025-11-25","o":1425.0,"h":1425.0,"l":1405.0,"c":1415.0,"v":19111329,"ma5":1411.0,"ma20":1459.0,"ma60":1370.08},{"d":"2025-11-26","o":1430.0,"h":1435.0,"l":1425.0,"c":1430.0,"v":19822723,"ma5":1417.0,"ma20":1455.25,"ma60":1374.33},{"d":"2025-11-27","o":1450.0,"h":1455.0,"l":1430.0,"c":1435.0,"v":17153500,"ma5":1412.0,"ma20":1451.75,"ma60":1378.83},{"d":"2025-11-28","o":1440.0,"h":1455.0,"l":1435.0,"c":1455.0,"v":13579896,"ma5":1424.0,"ma20":1448.5,"ma60":1383.83},{"d":"2025-12-01","o":1445.0,"h":1445.0,"l":1415.0,"c":1420.0,"v":22317788,"ma5":1431.0,"ma20":1444.75,"ma60":1388.25},{"d":"2025-12-02","o":1430.0,"h":1440.0,"l":1420.0,"c":1425.0,"v":15443551,"ma5":1433.0,"ma20":1441.0,"ma60":1392.75},{"d":"2025-12-03","o":1440.0,"h":1450.0,"l":1435.0,"c":1445.0,"v":14153700,"ma5":1436.0,"ma20":1440.0,"ma60":1397.5},{"d":"2025-12-04","o":1445.0,"h":1450.0,"l":1430.0,"c":1440.0,"v":15168904,"ma5":1437.0,"ma20":1438.25,"ma60":1402.0},{"d":"2025-12-05","o":1445.0,"h":1455.0,"l":1440.0,"c":1455.0,"v":15088870,"ma5":1437.0,"ma20":1438.0,"ma60":1406.42},{"d":"2025-12-08","o":1465.0,"h":1495.0,"l":1460.0,"c":1495.0,"v":18636942,"ma5":1452.0,"ma20":1438.5,"ma60":1411.33},{"d":"2025-12-09","o":1495.0,"h":1500.0,"l":1480.0,"c":1480.0,"v":13806252,"ma5":1463.0,"ma20":1439.25,"ma60":1415.5},{"d":"2025-12-10","o":1490.0,"h":1505.0,"l":1485.0,"c":1500.0,"v":17282428,"ma5":1474.0,"ma20":1440.0,"ma60":1419.92},{"d":"2025-12-11","o":1510.0,"h":1515.0,"l":1465.0,"c":1465.0,"v":24596445,"ma5":1479.0,"ma20":1440.0,"ma60":1423.33},{"d":"2025-12-12","o":1475.0,"h":1485.0,"l":1470.0,"c":1475.0,"v":16472503,"ma5":1483.0,"ma20":1442.0,"ma60":1427.0},{"d":"2025-12-15","o":1450.0,"h":1455.0,"l":1445.0,"c":1450.0,"v":19779530,"ma5":1474.0,"ma20":1442.0,"ma60":1429.83},{"d":"2025-12-16","o":1435.0,"h":1445.0,"l":1425.0,"c":1445.0,"v":27140809,"ma5":1467.0,"ma20":1443.5,"ma60":1432.83},{"d":"2025-12-17","o":1435.0,"h":1445.0,"l":1425.0,"c":1425.0,"v":23934479,"ma5":1452.0,"ma20":1444.75,"ma60":1435.25},{"d":"2025-12-18","o":1420.0,"h":1435.0,"l":1415.0,"c":1425.0,"v":24378900,"ma5":1444.0,"ma20":1443.0,"ma60":1437.67},{"d":"2025-12-19","o":1455.0,"h":1455.0,"l":1430.0,"c":1435.0,"v":16864830,"ma5":1436.0,"ma20":1445.0,"ma60":1440.0},{"d":"2025-12-22","o":1465.0,"h":1470.0,"l":1455.0,"c":1460.0,"v":14924817,"ma5":1438.0,"ma20":1448.75,"ma60":1442.0},{"d":"2025-12-23","o":1475.0,"h":1490.0,"l":1470.0,"c":1490.0,"v":16345002,"ma5":1447.0,"ma20":1452.5,"ma60":1444.5},{"d":"2025-12-24","o":1495.0,"h":1500.0,"l":1485.0,"c":1495.0,"v":10196762,"ma5":1461.0,"ma20":1455.75,"ma60":1447.33},{"d":"2025-12-26","o":1505.0,"h":1510.0,"l":1495.0,"c":1505.0,"v":16858682,"ma5":1477.0,"ma20":1459.25,"ma60":1450.75},{"d":"2025-12-29","o":1515.0,"h":1530.0,"l":1510.0,"c":1525.0,"v":19744700,"ma5":1495.0,"ma20":1462.75,"ma60":1454.17},{"d":"2025-12-30","o":1515.0,"h":1530.0,"l":1510.0,"c":1530.0,"v":16498612,"ma5":1509.0,"ma20":1468.25,"ma60":1457.5},{"d":"2025-12-31","o":1520.0,"h":1550.0,"l":1515.0,"c":1550.0,"v":24636479,"ma5":1521.0,"ma20":1474.5,"ma60":1460.58},{"d":"2026-01-02","o":1555.0,"h":1585.0,"l":1545.0,"c":1585.0,"v":29718577,"ma5":1539.0,"ma20":1481.5,"ma60":1463.75},{"d":"2026-01-05","o":1630.0,"h":1695.0,"l":1625.0,"c":1665.0,"v":55471669,"ma5":1571.0,"ma20":1492.75,"ma60":1467.5},{"d":"2026-01-06","o":1645.0,"h":1700.0,"l":1645.0,"c":1690.0,"v":33564907,"ma5":1604.0,"ma20":1504.5,"ma60":1472.0},{"d":"2026-01-07","o":1665.0,"h":1685.0,"l":1665.0,"c":1670.0,"v":37643143,"ma5":1632.0,"ma20":1513.25,"ma60":1475.83},{"d":"2026-01-08","o":1660.0,"h":1700.0,"l":1655.0,"c":1695.0,"v":22808689,"ma5":1661.0,"ma20":1524.0,"ma60":1480.42},{"d":"2026-01-09","o":1665.0,"h":1700.0,"l":1655.0,"c":1685.0,"v":28968165,"ma5":1681.0,"ma20":1533.25,"ma60":1484.75},{"d":"2026-01-12","o":1700.0,"h":1705.0,"l":1690.0,"c":1690.0,"v":23756414,"ma5":1686.0,"ma20":1544.5,"ma60":1488.58},{"d":"2026-01-13","o":1720.0,"h":1720.0,"l":1700.0,"c":1710.0,"v":23675790,"ma5":1690.0,"ma20":1556.25,"ma60":1492.25},{"d":"2026-01-14","o":1705.0,"h":1715.0,"l":1700.0,"c":1705.0,"v":20494593,"ma5":1697.0,"ma20":1569.0,"ma60":1496.42},{"d":"2026-01-15","o":1685.0,"h":1700.0,"l":1680.0,"c":1695.0,"v":28750784,"ma5":1697.0,"ma20":1581.5,"ma60":1499.92},{"d":"2026-01-16","o":1735.0,"h":1750.0,"l":1710.0,"c":1745.0,"v":37125295,"ma5":1709.0,"ma20":1597.5,"ma60":1504.25},{"d":"2026-01-19","o":1725.0,"h":1780.0,"l":1725.0,"c":1760.0,"v":25446255,"ma5":1723.0,"ma20":1614.25,"ma60":1509.08},{"d":"2026-01-20","o":1740.0,"h":1775.0,"l":1740.0,"c":1770.0,"v":23184687,"ma5":1735.0,"ma20":1631.0,"ma60":1514.42},{"d":"2026-01-21","o":1745.0,"h":1765.0,"l":1740.0,"c":1745.0,"v":34391349,"ma5":1743.0,"ma20":1645.25,"ma60":1518.67},{"d":"2026-01-22","o":1765.0,"h":1770.0,"l":1750.0,"c":1755.0,"v":23568440,"ma5":1755.0,"ma20":1658.5,"ma60":1523.33},{"d":"2026-01-23","o":1770.0,"h":1775.0,"l":1750.0,"c":1770.0,"v":19447029,"ma5":1760.0,"ma20":1672.25,"ma60":1527.75},{"d":"2026-01-26","o":1765.0,"h":1785.0,"l":1755.0,"c":1755.0,"v":18738628,"ma5":1759.0,"ma20":1684.75,"ma60":1531.92},{"d":"2026-01-27","o":1760.0,"h":1785.0,"l":1755.0,"c":1775.0,"v":22158411,"ma5":1760.0,"ma20":1697.25,"ma60":1536.17},{"d":"2026-01-28","o":1790.0,"h":1820.0,"l":1790.0,"c":1815.0,"v":20687270,"ma5":1774.0,"ma20":1711.5,"ma60":1541.5},{"d":"2026-01-29","o":1830.0,"h":1835.0,"l":1800.0,"c":1805.0,"v":22568242,"ma5":1784.0,"ma20":1724.25,"ma60":1546.58},{"d":"2026-01-30","o":1790.0,"h":1800.0,"l":1780.0,"c":1790.0,"v":25313793,"ma5":1788.0,"ma20":1734.5,"ma60":1552.0},{"d":"2026-02-02","o":1750.0,"h":1765.0,"l":1745.0,"c":1760.0,"v":25160880,"ma5":1789.0,"ma20":1739.25,"ma60":1556.75},{"d":"2026-02-03","o":1810.0,"h":1810.0,"l":1785.0,"c":1800.0,"v":17377456,"ma5":1794.0,"ma20":1744.75,"ma60":1562.42},{"d":"2026-02-04","o":1785.0,"h":1805.0,"l":1775.0,"c":1780.0,"v":20808096,"ma5":1787.0,"ma20":1750.25,"ma60":1567.33},{"d":"2026-02-05","o":1765.0,"h":1780.0,"l":1760.0,"c":1770.0,"v":20576044,"ma5":1780.0,"ma20":1754.0,"ma60":1572.42},{"d":"2026-02-06","o":1745.0,"h":1780.0,"l":1740.0,"c":1770.0,"v":25037594,"ma5":1776.0,"ma20":1758.25,"ma60":1577.17},{"d":"2026-02-09","o":1830.0,"h":1835.0,"l":1815.0,"c":1820.0,"v":27027110,"ma5":1788.0,"ma20":1764.75,"ma60":1583.08},{"d":"2026-02-10","o":1845.0,"h":1875.0,"l":1840.0,"c":1870.0,"v":32973949,"ma5":1802.0,"ma20":1772.75,"ma60":1590.33},{"d":"2026-02-11","o":1880.0,"h":1925.0,"l":1875.0,"c":1920.0,"v":31477909,"ma5":1830.0,"ma20":1783.5,"ma60":1598.17},{"d":"2026-02-23","o":1900.0,"h":1935.0,"l":1900.0,"c":1905.0,"v":49285034,"ma5":1857.0,"ma20":1794.0,"ma60":1606.33},{"d":"2026-02-24","o":1915.0,"h":1975.0,"l":1915.0,"c":1970.0,"v":30869981,"ma5":1897.0,"ma20":1805.25,"ma60":1615.83},{"d":"2026-02-25","o":1995.0,"h":2025.0,"l":1995.0,"c":2005.0,"v":32151112,"ma5":1934.0,"ma20":1817.5,"ma60":1624.92},{"d":"2026-02-26","o":2000.0,"h":2010.0,"l":1995.0,"c":2005.0,"v":28457060,"ma5":1961.0,"ma20":1829.25,"ma60":1635.08},{"d":"2026-03-02","o":1940.0,"h":1995.0,"l":1940.0,"c":1985.0,"v":32493409,"ma5":1974.0,"ma20":1841.25,"ma60":1645.08},{"d":"2026-03-03","o":1970.0,"h":1980.0,"l":1940.0,"c":1945.0,"v":39410506,"ma5":1982.0,"ma20":1850.75,"ma60":1653.92},{"d":"2026-03-04","o":1895.0,"h":1910.0,"l":1870.0,"c":1870.0,"v":61284592,"ma5":1962.0,"ma20":1855.75,"ma60":1661.25},{"d":"2026-03-05","o":1940.0,"h":1960.0,"l":1895.0,"c":1905.0,"v":37079411,"ma5":1942.0,"ma20":1863.25,"ma60":1669.08},{"d":"2026-03-06","o":1880.0,"h":1900.0,"l":1880.0,"c":1885.0,"v":25259564,"ma5":1918.0,"ma20":1868.75,"ma60":1676.25},{"d":"2026-03-09","o":1775.0,"h":1810.0,"l":1770.0,"c":1795.0,"v":73266995,"ma5":1880.0,"ma20":1867.75,"ma60":1682.5},{"d":"2026-03-10","o":1870.0,"h":1890.0,"l":1830.0,"c":1855.0,"v":33583830,"ma5":1862.0,"ma20":1870.25,"ma60":1689.67},{"d":"2026-03-11","o":1885.0,"h":1950.0,"l":1875.0,"c":1940.0,"v":29700492,"ma5":1876.0,"ma20":1877.75,"ma60":1697.92},{"d":"2026-03-12","o":1900.0,"h":1915.0,"l":1885.0,"c":1890.0,"v":26150709,"ma5":1873.0,"ma20":1884.25,"ma60":1705.42},{"d":"2026-03-13","o":1840.0,"h":1885.0,"l":1840.0,"c":1870.0,"v":25006042,"ma5":1870.0,"ma20":1887.75,"ma60":1712.33},{"d":"2026-03-16","o":1875.0,"h":1880.0,"l":1850.0,"c":1855.0,"v":24414311,"ma5":1882.0,"ma20":1891.5,"ma60":1718.33},{"d":"2026-03-17","o":1875.0,"h":1880.0,"l":1860.0,"c":1870.0,"v":16475563,"ma5":1885.0,"ma20":1896.5,"ma60":1724.83},{"d":"2026-03-18","o":1900.0,"h":1910.0,"l":1890.0,"c":1905.0,"v":17437162,"ma5":1878.0,"ma20":1903.25,"ma60":1731.58},{"d":"2026-03-19","o":1875.0,"h":1880.0,"l":1850.0,"c":1855.0,"v":32005876,"ma5":1871.0,"ma20":1905.0,"ma60":1738.08},{"d":"2026-03-20","o":1860.0,"h":1870.0,"l":1840.0,"c":1845.0,"v":22236254,"ma5":1866.0,"ma20":1903.75,"ma60":1744.25},{"d":"2026-03-23","o":1790.0,"h":1815.0,"l":1785.0,"c":1810.0,"v":29844440,"ma5":1857.0,"ma20":1898.25,"ma60":1750.25},{"d":"2026-03-24","o":1850.0,"h":1850.0,"l":1800.0,"c":1825.0,"v":18497198,"ma5":1848.0,"ma20":1894.25,"ma60":1756.58},{"d":"2026-03-25","o":1865.0,"h":1875.0,"l":1845.0,"c":1855.0,"v":27450470,"ma5":1838.0,"ma20":1888.5,"ma60":1763.75},{"d":"2026-03-26","o":1850.0,"h":1865.0,"l":1840.0,"c":1850.0,"v":15470949,"ma5":1837.0,"ma20":1880.75,"ma60":1770.83},{"d":"2026-03-27","o":1805.0,"h":1825.0,"l":1800.0,"c":1820.0,"v":19970174,"ma5":1832.0,"ma20":1871.5,"ma60":1777.25},{"d":"2026-03-30","o":1780.0,"h":1800.0,"l":1780.0,"c":1795.0,"v":29270690,"ma5":1829.0,"ma20":1862.0,"ma60":1782.83},{"d":"2026-03-31","o":1775.0,"h":1790.0,"l":1760.0,"c":1765.0,"v":39629116,"ma5":1817.0,"ma20":1853.0,"ma60":1787.42},{"d":"2026-04-01","o":1840.0,"h":1855.0,"l":1830.0,"c":1850.0,"v":25502109,"ma5":1816.0,"ma20":1852.0,"ma60":1793.33}],
+   signals:[{"i":3,"d":"2025-04-08","t":"B4","px":817.0,"dev":-14.3},{"i":28,"d":"2025-05-14","t":"S4","px":997.0,"dev":10.4},{"i":37,"d":"2025-05-27","t":"B3","px":964.0,"dev":0.5},{"i":42,"d":"2025-06-04","t":"B2","px":986.0,"dev":1.6},{"i":85,"d":"2025-08-04","t":"B3","px":1135.0,"dev":0.8},{"i":88,"d":"2025-08-07","t":"B2","px":1180.0,"dev":3.8},{"i":100,"d":"2025-08-25","t":"B2","px":1170.0,"dev":0.7},{"i":101,"d":"2025-08-26","t":"B3","px":1180.0,"dev":1.4},{"i":109,"d":"2025-09-05","t":"B1","px":1170.0,"dev":0.0},{"i":129,"d":"2025-10-07","t":"S4","px":1440.0,"dev":11.1},{"i":149,"d":"2025-11-06","t":"B2","px":1475.0,"dev":0.2},{"i":166,"d":"2025-12-01","t":"S2","px":1420.0,"dev":-1.7},{"i":178,"d":"2025-12-17","t":"S1","px":1425.0,"dev":-1.4},{"i":181,"d":"2025-12-22","t":"B2","px":1460.0,"dev":0.8},{"i":189,"d":"2026-01-05","t":"S4","px":1665.0,"dev":11.5},{"i":209,"d":"2026-02-02","t":"B3","px":1760.0,"dev":1.2},{"i":219,"d":"2026-02-25","t":"S4","px":2005.0,"dev":10.3},{"i":228,"d":"2026-03-11","t":"B2","px":1940.0,"dev":3.3},{"i":233,"d":"2026-03-18","t":"B2","px":1905.0,"dev":0.1}],
+   devHi:10, devLo:-10,
+   curated:[
+     {d:"2025-04-08",note:"對等關稅股災連日重挫，收盤負乖離擴大到 −14.3%（4/9 最低 780）。典型的④跌深反彈買點——其後一路修復，一年內最高漲至 2,025。"},
+     {d:"2025-06-04",note:"5 月底短暫跌破仍在上升的月線後迅速站回（②假跌破），洗盤結束後續攻 7 月新高。"},
+     {d:"2025-08-04",note:"回檔觸及上升月線獲支撐（③），隔日收紅後展開 8–10 月主升段。"},
+     {d:"2025-09-05",note:"整理後帶量重新站上走平翻揚的月線（①突破買進），一個月內從 1,170 漲到 1,440（約 +23%）。"},
+     {d:"2025-10-07",note:"正乖離 +11.1% 觸發⑧漲多停利訊號，其後高檔震盪一個月。"},
+     {d:"2025-12-01",note:"反彈站上下彎月線又迅速跌回（⑥假突破）。注意：此波⑤⑥訊號其後被 1 月行情否定——季線未破時，賣訊宜視為減碼而非反手。"},
+     {d:"2026-02-25",note:"創 2,025 新高當週正乖離再達 +10.3%（⑧），隨後回檔近 12%，驗證乖離停利的價值。"},
+     {d:"2026-03-18",note:"回測月線快速收復（②），跌深後的第一個順勢買點。"},
+   ],
+   advice:{
+     asof:"2026/04/01", close:1850, chg:"+10", ma20:1852, ma60:1793, dev20:-0.1,
+     hi52:2025, lo52:780,
+     ladder:{min:1700, max:2100, bands:[
+       {kind:"tp",  lo:2005, hi:2025, label:"停利／壓力 前高區"},
+       {kind:"tp2", px:2040, label:"⑧ 乖離+10%"},
+       {kind:"now", px:1850, label:"收盤 1,850"},
+       {kind:"buyA",lo:1855, hi:1870, label:"① 站回月線買進"},
+       {kind:"buyB",lo:1790, hi:1800, label:"③ 季線支撐買進"},
+       {kind:"stop",px:1755, label:"停損 跌破季線 −2%"},
+     ]},
+     buys:[
+       "<b>積極（法則①／②）</b>：收盤重新站上月線並確認月線走平翻揚，於 <b>1,855–1,870</b> 進場；若跌破後 3 日內收復亦視為②假跌破買點。",
+       "<b>穩健（法則③）</b>：拉回測試上揚的季線 <b>1,790–1,800</b> 不破時分批承接；此區亦與 3 月震盪低點 1,760–1,800 重疊，支撐較厚。",
+     ],
+     sells:[
+       "<b>停利（法則⑧＋前高）</b>：反彈至前波高點 <b>2,005–2,025</b> 分批減碼；若正乖離再度 ≥ +10%（約 <b>2,040</b>）則加速停利。",
+       "<b>停損（法則⑤）</b>：收盤跌破季線且 3 日未收復（約 <b>1,755</b>）出場，避免月線⑤訊號在盤整期的反覆。",
+     ],
+     stance:"目前股價貼著月線整理、季線持續上揚，多頭架構未破壞——屬「回檔找買點」而非「反轉找賣點」的格局。"
+   }
+ },
+ "4958":{
+   name:"臻鼎-KY", code:"4958.TW", tick:0.5, unit:"元",
+   rows:[{"d":"2025-04-01","o":104.0,"h":108.0,"l":103.5,"c":108.0,"v":3822780,"ma5":109.4,"ma20":111.88,"ma60":116.47},{"d":"2025-04-02","o":107.5,"h":109.0,"l":106.5,"c":108.0,"v":3023854,"ma5":108.3,"ma20":111.5,"ma60":116.22},{"d":"2025-04-07","o":97.2,"h":97.2,"l":97.2,"c":97.2,"v":2250213,"ma5":105.34,"ma20":110.63,"ma60":115.79},{"d":"2025-04-08","o":92.8,"h":94.9,"l":90.8,"c":93.2,"v":14292158,"ma5":102.08,"ma20":109.59,"ma60":115.31},{"d":"2025-04-09","o":91.5,"h":92.1,"l":84.2,"c":86.4,"v":15500810,"ma5":98.56,"ma20":108.24,"ma60":114.75},{"d":"2025-04-10","o":94.3,"h":94.3,"l":94.3,"c":94.3,"v":796961,"ma5":95.82,"ma20":107.25,"ma60":114.31},{"d":"2025-04-11","o":93.7,"h":96.1,"l":88.6,"c":95.6,"v":9247242,"ma5":93.34,"ma20":106.38,"ma60":113.89},{"d":"2025-04-14","o":98.9,"h":101.5,"l":95.6,"c":96.2,"v":8044097,"ma5":93.14,"ma20":105.67,"ma60":113.46},{"d":"2025-04-15","o":96.7,"h":97.5,"l":95.9,"c":96.5,"v":4375836,"ma5":93.8,"ma20":104.92,"ma60":113.03},{"d":"2025-04-16","o":96.1,"h":96.7,"l":93.0,"c":94.8,"v":6023090,"ma5":95.48,"ma20":104.11,"ma60":112.61},{"d":"2025-04-17","o":93.0,"h":93.1,"l":90.9,"c":91.9,"v":6437645,"ma5":95.0,"ma20":103.1,"ma60":112.18},{"d":"2025-04-18","o":92.5,"h":93.3,"l":92.4,"c":93.1,"v":2822692,"ma5":94.5,"ma20":102.23,"ma60":111.77},{"d":"2025-04-21","o":94.1,"h":95.3,"l":91.4,"c":92.0,"v":3504516,"ma5":93.66,"ma20":101.26,"ma60":111.42},{"d":"2025-04-22","o":91.6,"h":92.7,"l":90.5,"c":91.0,"v":4875202,"ma5":92.56,"ma20":100.18,"ma60":111.0},{"d":"2025-04-23","o":93.3,"h":94.9,"l":93.2,"c":94.3,"v":5293748,"ma5":92.46,"ma20":99.28,"ma60":110.66},{"d":"2025-04-24","o":94.7,"h":95.5,"l":94.2,"c":94.5,"v":3298229,"ma5":92.98,"ma20":98.3,"ma60":110.31},{"d":"2025-04-25","o":95.7,"h":97.1,"l":95.6,"c":96.5,"v":3339274,"ma5":93.66,"ma20":97.45,"ma60":109.95},{"d":"2025-04-28","o":96.7,"h":97.1,"l":96.4,"c":96.4,"v":2870923,"ma5":94.54,"ma20":96.67,"ma60":109.61},{"d":"2025-04-29","o":96.6,"h":97.6,"l":96.5,"c":97.4,"v":2453430,"ma5":95.82,"ma20":96.07,"ma60":109.28},{"d":"2025-04-30","o":97.4,"h":99.5,"l":96.9,"c":97.5,"v":9503780,"ma5":96.46,"ma20":95.74,"ma60":108.91},{"d":"2025-05-02","o":99.1,"h":100.5,"l":98.6,"c":99.5,"v":20191876,"ma5":97.46,"ma20":95.32,"ma60":108.66},{"d":"2025-05-05","o":99.0,"h":100.5,"l":94.9,"c":97.0,"v":55524896,"ma5":97.56,"ma20":94.77,"ma60":108.4},{"d":"2025-05-06","o":96.8,"h":99.5,"l":96.5,"c":99.0,"v":31361224,"ma5":98.08,"ma20":94.86,"ma60":108.11},{"d":"2025-05-07","o":99.5,"h":102.0,"l":99.4,"c":99.6,"v":35817192,"ma5":98.52,"ma20":95.18,"ma60":107.82},{"d":"2025-05-08","o":100.0,"h":103.0,"l":100.0,"c":102.0,"v":36656090,"ma5":99.42,"ma20":95.96,"ma60":107.54},{"d":"2025-05-09","o":102.0,"h":103.0,"l":101.5,"c":103.0,"v":22094170,"ma5":100.12,"ma20":96.39,"ma60":107.27},{"d":"2025-05-12","o":104.0,"h":105.0,"l":103.5,"c":104.0,"v":21625410,"ma5":101.52,"ma20":96.81,"ma60":107.02},{"d":"2025-05-13","o":106.0,"h":107.0,"l":103.5,"c":104.5,"v":61084350,"ma5":102.62,"ma20":97.23,"ma60":106.77},{"d":"2025-05-14","o":101.0,"h":102.5,"l":100.5,"c":102.5,"v":60846770,"ma5":103.2,"ma20":97.53,"ma60":106.47},{"d":"2025-05-15","o":102.0,"h":103.0,"l":101.0,"c":102.5,"v":24613580,"ma5":103.3,"ma20":97.91,"ma60":106.19},{"d":"2025-05-16","o":102.5,"h":103.5,"l":101.0,"c":101.0,"v":32921740,"ma5":102.9,"ma20":98.37,"ma60":105.87},{"d":"2025-05-19","o":102.0,"h":103.5,"l":101.0,"c":101.5,"v":27759160,"ma5":102.4,"ma20":98.79,"ma60":105.53},{"d":"2025-05-20","o":101.5,"h":102.0,"l":100.0,"c":100.0,"v":23083240,"ma5":101.5,"ma20":99.19,"ma60":105.18},{"d":"2025-05-21","o":101.0,"h":104.0,"l":100.5,"c":104.0,"v":38478020,"ma5":101.8,"ma20":99.84,"ma60":104.9},{"d":"2025-05-22","o":102.5,"h":103.5,"l":100.5,"c":101.0,"v":36781670,"ma5":101.5,"ma20":100.17,"ma60":104.56},{"d":"2025-05-23","o":101.5,"h":103.5,"l":101.5,"c":102.5,"v":28616650,"ma5":101.8,"ma20":100.57,"ma60":104.25},{"d":"2025-05-26","o":102.5,"h":103.0,"l":101.5,"c":101.5,"v":24388080,"ma5":101.8,"ma20":100.82,"ma60":103.92},{"d":"2025-05-27","o":102.5,"h":105.0,"l":102.0,"c":102.5,"v":41147130,"ma5":102.3,"ma20":101.12,"ma60":103.63},{"d":"2025-05-28","o":104.0,"h":104.5,"l":102.5,"c":103.5,"v":37844540,"ma5":102.2,"ma20":101.43,"ma60":103.41},{"d":"2025-05-29","o":104.5,"h":104.5,"l":102.5,"c":103.0,"v":33289920,"ma5":102.6,"ma20":101.7,"ma60":103.22},{"d":"2025-06-02","o":103.0,"h":103.5,"l":101.5,"c":102.0,"v":41666710,"ma5":102.5,"ma20":101.83,"ma60":103.01},{"d":"2025-06-03","o":103.5,"h":105.0,"l":103.0,"c":103.5,"v":35895150,"ma5":102.9,"ma20":102.15,"ma60":102.81},{"d":"2025-06-04","o":105.0,"h":107.5,"l":105.0,"c":107.0,"v":46935770,"ma5":103.8,"ma20":102.55,"ma60":102.68},{"d":"2025-06-05","o":106.0,"h":107.0,"l":105.0,"c":106.0,"v":22540660,"ma5":104.3,"ma20":102.88,"ma60":102.55},{"d":"2025-06-06","o":106.5,"h":107.5,"l":106.0,"c":107.0,"v":19491900,"ma5":105.1,"ma20":103.12,"ma60":102.44},{"d":"2025-06-09","o":107.5,"h":108.0,"l":106.0,"c":107.5,"v":33120190,"ma5":106.2,"ma20":103.35,"ma60":102.33},{"d":"2025-06-10","o":108.0,"h":108.0,"l":106.5,"c":106.5,"v":29592220,"ma5":106.8,"ma20":103.47,"ma60":102.22},{"d":"2025-06-11","o":107.0,"h":107.5,"l":105.5,"c":107.0,"v":25914362,"ma5":106.8,"ma20":103.6,"ma60":102.17},{"d":"2025-06-12","o":102.0,"h":102.0,"l":100.0,"c":101.0,"v":64014120,"ma5":105.8,"ma20":103.53,"ma60":101.99},{"d":"2025-06-13","o":101.0,"h":102.0,"l":99.5,"c":100.5,"v":69694540,"ma5":104.5,"ma20":103.42,"ma60":101.82},{"d":"2025-06-16","o":100.5,"h":100.5,"l":98.5,"c":98.9,"v":54875590,"ma5":102.78,"ma20":103.32,"ma60":101.6},{"d":"2025-06-17","o":99.5,"h":100.0,"l":97.1,"c":97.5,"v":72060390,"ma5":100.98,"ma20":103.12,"ma60":101.38},{"d":"2025-06-18","o":97.9,"h":99.4,"l":97.6,"c":99.1,"v":48151200,"ma5":99.4,"ma20":103.08,"ma60":101.17},{"d":"2025-06-19","o":99.2,"h":99.3,"l":97.9,"c":98.0,"v":21080070,"ma5":98.8,"ma20":102.78,"ma60":100.93},{"d":"2025-06-20","o":98.0,"h":98.2,"l":96.7,"c":97.3,"v":18390240,"ma5":98.16,"ma20":102.59,"ma60":100.68},{"d":"2025-06-23","o":96.2,"h":97.4,"l":95.7,"c":97.0,"v":35494340,"ma5":97.78,"ma20":102.32,"ma60":100.4},{"d":"2025-06-24","o":99.0,"h":100.5,"l":98.6,"c":99.9,"v":47386230,"ma5":98.26,"ma20":102.24,"ma60":100.17},{"d":"2025-06-25","o":100.0,"h":101.0,"l":100.0,"c":101.0,"v":38251400,"ma5":98.64,"ma20":102.16,"ma60":99.99},{"d":"2025-06-26","o":100.0,"h":100.5,"l":98.8,"c":98.9,"v":32612970,"ma5":98.82,"ma20":101.93,"ma60":99.81},{"d":"2025-06-27","o":99.4,"h":100.5,"l":98.0,"c":100.5,"v":41459400,"ma5":99.46,"ma20":101.81,"ma60":99.75},{"d":"2025-06-30","o":100.5,"h":102.5,"l":100.0,"c":101.0,"v":24568168,"ma5":100.26,"ma20":101.76,"ma60":99.63},{"d":"2025-07-01","o":100.5,"h":102.5,"l":99.9,"c":100.5,"v":19434608,"ma5":100.38,"ma20":101.61,"ma60":99.51},{"d":"2025-07-02","o":100.5,"h":103.0,"l":100.5,"c":102.0,"v":19991525,"ma5":100.58,"ma20":101.36,"ma60":99.59},{"d":"2025-07-03","o":102.5,"h":106.0,"l":102.0,"c":104.5,"v":27595844,"ma5":101.7,"ma20":101.28,"ma60":99.78},{"d":"2025-07-04","o":105.0,"h":105.5,"l":103.0,"c":104.0,"v":9537563,"ma5":102.4,"ma20":101.13,"ma60":100.07},{"d":"2025-07-07","o":105.0,"h":112.5,"l":105.0,"c":107.5,"v":24705316,"ma5":103.7,"ma20":101.13,"ma60":100.29},{"d":"2025-07-08","o":107.0,"h":109.5,"l":106.0,"c":109.5,"v":7588703,"ma5":105.5,"ma20":101.28,"ma60":100.52},{"d":"2025-07-09","o":108.0,"h":115.5,"l":107.0,"c":113.5,"v":21329214,"ma5":107.8,"ma20":101.61,"ma60":100.81},{"d":"2025-07-10","o":113.5,"h":114.5,"l":112.0,"c":112.5,"v":7864582,"ma5":109.4,"ma20":102.18,"ma60":101.08},{"d":"2025-07-11","o":112.5,"h":113.5,"l":110.5,"c":111.5,"v":7300287,"ma5":110.9,"ma20":102.73,"ma60":101.36},{"d":"2025-07-14","o":110.5,"h":110.5,"l":108.0,"c":108.0,"v":7444523,"ma5":111.0,"ma20":103.19,"ma60":101.62},{"d":"2025-07-15","o":108.0,"h":114.0,"l":107.5,"c":113.0,"v":11292223,"ma5":111.7,"ma20":103.96,"ma60":101.96},{"d":"2025-07-16","o":113.0,"h":113.5,"l":111.5,"c":112.0,"v":7445602,"ma5":111.4,"ma20":104.61,"ma60":102.29},{"d":"2025-07-17","o":111.5,"h":114.0,"l":110.5,"c":114.0,"v":6083325,"ma5":111.7,"ma20":105.41,"ma60":102.67},{"d":"2025-07-18","o":114.5,"h":114.5,"l":113.5,"c":114.0,"v":4626816,"ma5":112.2,"ma20":106.24,"ma60":103.0},{"d":"2025-07-21","o":114.5,"h":115.5,"l":113.5,"c":115.0,"v":4396266,"ma5":113.6,"ma20":107.14,"ma60":103.34},{"d":"2025-07-22","o":114.5,"h":116.0,"l":112.0,"c":113.0,"v":4624326,"ma5":113.6,"ma20":107.8,"ma60":103.62},{"d":"2025-07-23","o":113.5,"h":116.0,"l":112.5,"c":115.5,"v":5985013,"ma5":114.3,"ma20":108.52,"ma60":103.94},{"d":"2025-07-24","o":116.0,"h":118.0,"l":115.0,"c":117.0,"v":5211324,"ma5":114.9,"ma20":109.42,"ma60":104.26},{"d":"2025-07-25","o":119.0,"h":119.5,"l":115.5,"c":116.0,"v":3657017,"ma5":115.3,"ma20":110.2,"ma60":104.57},{"d":"2025-07-28","o":117.0,"h":117.5,"l":115.5,"c":117.5,"v":2235730,"ma5":115.8,"ma20":111.03,"ma60":104.87},{"d":"2025-07-29","o":126.5,"h":128.5,"l":125.0,"c":128.0,"v":41740955,"ma5":118.8,"ma20":112.4,"ma60":105.39},{"d":"2025-07-30","o":125.0,"h":127.0,"l":123.5,"c":124.5,"v":19040722,"ma5":120.6,"ma20":113.53,"ma60":105.81},{"d":"2025-07-31","o":124.0,"h":126.0,"l":123.5,"c":124.5,"v":10779074,"ma5":122.1,"ma20":114.53,"ma60":106.23},{"d":"2025-08-01","o":123.5,"h":126.0,"l":122.5,"c":122.5,"v":6983395,"ma5":123.4,"ma20":115.45,"ma60":106.57},{"d":"2025-08-04","o":121.0,"h":123.0,"l":121.0,"c":122.5,"v":5280701,"ma5":124.4,"ma20":116.2,"ma60":106.89},{"d":"2025-08-05","o":122.0,"h":123.0,"l":120.5,"c":121.0,"v":4824114,"ma5":123.0,"ma20":116.78,"ma60":107.18},{"d":"2025-08-06","o":121.0,"h":123.0,"l":120.5,"c":121.5,"v":6507968,"ma5":122.4,"ma20":117.17,"ma60":107.46},{"d":"2025-08-07","o":122.5,"h":124.5,"l":121.5,"c":124.0,"v":6793165,"ma5":122.3,"ma20":117.75,"ma60":107.82},{"d":"2025-08-08","o":125.0,"h":132.0,"l":124.5,"c":128.5,"v":19746059,"ma5":123.5,"ma20":118.6,"ma60":108.25},{"d":"2025-08-11","o":131.5,"h":141.5,"l":131.5,"c":141.5,"v":27995648,"ma5":127.3,"ma20":120.28,"ma60":108.93},{"d":"2025-08-12","o":142.0,"h":151.0,"l":139.5,"c":147.0,"v":55257824,"ma5":132.5,"ma20":121.97,"ma60":109.69},{"d":"2025-08-13","o":156.5,"h":161.5,"l":154.5,"c":160.5,"v":98114200,"ma5":140.3,"ma20":124.4,"ma60":110.69},{"d":"2025-08-14","o":159.0,"h":162.0,"l":153.0,"c":154.5,"v":37548266,"ma5":146.4,"ma20":126.42,"ma60":111.54},{"d":"2025-08-15","o":157.0,"h":162.0,"l":155.0,"c":160.0,"v":28099189,"ma5":152.7,"ma20":128.72,"ma60":112.52},{"d":"2025-08-18","o":161.0,"h":172.5,"l":160.5,"c":170.0,"v":46390533,"ma5":158.4,"ma20":131.47,"ma60":113.64},{"d":"2025-08-19","o":172.0,"h":173.0,"l":164.0,"c":166.0,"v":29704583,"ma5":162.2,"ma20":134.12,"ma60":114.72},{"d":"2025-08-20","o":164.0,"h":167.0,"l":156.5,"c":160.0,"v":23024356,"ma5":162.1,"ma20":136.35,"ma60":115.68},{"d":"2025-08-21","o":164.0,"h":170.0,"l":162.0,"c":168.5,"v":26729986,"ma5":164.9,"ma20":138.93,"ma60":116.76},{"d":"2025-08-22","o":168.5,"h":175.0,"l":167.0,"c":171.5,"v":26639525,"ma5":167.2,"ma20":141.7,"ma60":117.9},{"d":"2025-08-25","o":182.0,"h":187.5,"l":180.0,"c":181.0,"v":31774398,"ma5":169.4,"ma20":144.88,"ma60":119.22},{"d":"2025-08-26","o":181.0,"h":194.5,"l":181.0,"c":191.5,"v":44273929,"ma5":174.5,"ma20":148.05,"ma60":120.69},{"d":"2025-08-27","o":194.5,"h":201.0,"l":190.5,"c":193.0,"v":35760339,"ma5":181.1,"ma20":151.47,"ma60":122.12},{"d":"2025-08-28","o":190.5,"h":196.5,"l":190.0,"c":194.5,"v":16707528,"ma5":186.3,"ma20":154.97,"ma60":123.59},{"d":"2025-08-29","o":198.5,"h":198.5,"l":190.5,"c":196.0,"v":17478898,"ma5":191.2,"ma20":158.65,"ma60":125.08},{"d":"2025-09-01","o":197.0,"h":201.5,"l":185.0,"c":188.5,"v":36250197,"ma5":192.7,"ma20":161.95,"ma60":126.43},{"d":"2025-09-02","o":194.5,"h":194.5,"l":180.5,"c":183.0,"v":25478447,"ma5":191.0,"ma20":165.05,"ma60":127.7},{"d":"2025-09-03","o":186.5,"h":191.0,"l":180.5,"c":181.0,"v":20297698,"ma5":188.6,"ma20":168.03,"ma60":128.94},{"d":"2025-09-04","o":185.5,"h":186.5,"l":172.0,"c":173.0,"v":24853054,"ma5":184.3,"ma20":170.47,"ma60":130.14},{"d":"2025-09-05","o":177.5,"h":178.5,"l":170.0,"c":173.5,"v":22909166,"ma5":179.8,"ma20":172.72,"ma60":131.35},{"d":"2025-09-08","o":174.0,"h":174.0,"l":166.5,"c":166.5,"v":20844763,"ma5":175.4,"ma20":173.97,"ma60":132.48},{"d":"2025-09-09","o":169.0,"h":173.0,"l":166.0,"c":167.5,"v":18955798,"ma5":172.3,"ma20":175.0,"ma60":133.65},{"d":"2025-09-10","o":169.0,"h":173.0,"l":166.5,"c":168.0,"v":18697424,"ma5":169.7,"ma20":175.38,"ma60":134.79},{"d":"2025-09-11","o":178.0,"h":179.5,"l":167.5,"c":169.5,"v":29332229,"ma5":169.0,"ma20":176.12,"ma60":135.99},{"d":"2025-09-12","o":173.0,"h":173.5,"l":168.5,"c":169.5,"v":16644517,"ma5":168.2,"ma20":176.6,"ma60":137.19},{"d":"2025-09-15","o":171.0,"h":171.0,"l":163.5,"c":167.0,"v":9838378,"ma5":168.3,"ma20":176.45,"ma60":138.36},{"d":"2025-09-16","o":167.0,"h":178.0,"l":165.5,"c":173.0,"v":24058851,"ma5":169.4,"ma20":176.8,"ma60":139.57},{"d":"2025-09-17","o":172.5,"h":175.0,"l":170.0,"c":172.0,"v":18298296,"ma5":170.2,"ma20":177.4,"ma60":140.76},{"d":"2025-09-18","o":172.0,"h":173.0,"l":166.0,"c":168.5,"v":20861171,"ma5":170.0,"ma20":177.4,"ma60":141.92},{"d":"2025-09-19","o":169.0,"h":175.0,"l":168.0,"c":168.5,"v":20043924,"ma5":169.8,"ma20":177.25,"ma60":143.05},{"d":"2025-09-22","o":170.0,"h":177.0,"l":168.0,"c":174.5,"v":17352710,"ma5":171.3,"ma20":176.93,"ma60":144.28},{"d":"2025-09-23","o":176.5,"h":178.0,"l":169.5,"c":172.0,"v":19157089,"ma5":171.1,"ma20":175.95,"ma60":145.47},{"d":"2025-09-24","o":172.0,"h":172.0,"l":167.5,"c":169.5,"v":9375037,"ma5":170.6,"ma20":174.78,"ma60":146.59},{"d":"2025-09-25","o":170.5,"h":172.5,"l":168.5,"c":171.5,"v":9057566,"ma5":171.2,"ma20":173.62,"ma60":147.71},{"d":"2025-09-26","o":171.0,"h":171.5,"l":162.5,"c":165.5,"v":15617455,"ma5":170.6,"ma20":172.1,"ma60":148.73},{"d":"2025-09-30","o":169.0,"h":170.0,"l":163.5,"c":166.0,"v":9369676,"ma5":168.9,"ma20":170.97,"ma60":149.71},{"d":"2025-10-01","o":165.5,"h":167.0,"l":161.5,"c":162.0,"v":7586919,"ma5":166.9,"ma20":169.93,"ma60":150.58},{"d":"2025-10-02","o":162.5,"h":164.0,"l":158.0,"c":160.0,"v":15479880,"ma5":165.0,"ma20":168.88,"ma60":151.36},{"d":"2025-10-03","o":160.0,"h":164.0,"l":160.0,"c":163.5,"v":9616678,"ma5":163.4,"ma20":168.4,"ma60":152.21},{"d":"2025-10-07","o":165.0,"h":167.0,"l":162.5,"c":166.5,"v":6118775,"ma5":163.6,"ma20":168.05,"ma60":153.12},{"d":"2025-10-08","o":165.5,"h":168.0,"l":163.5,"c":167.0,"v":6619429,"ma5":163.8,"ma20":168.07,"ma60":154.11},{"d":"2025-10-09","o":168.0,"h":169.5,"l":164.0,"c":166.5,"v":9173241,"ma5":164.7,"ma20":168.03,"ma60":155.0},{"d":"2025-10-13","o":156.0,"h":161.0,"l":156.0,"c":159.5,"v":15665752,"ma5":164.6,"ma20":167.6,"ma60":155.79},{"d":"2025-10-14","o":160.0,"h":160.5,"l":144.5,"c":146.5,"v":25047310,"ma5":161.2,"ma20":166.45,"ma60":156.33},{"d":"2025-10-15","o":148.0,"h":149.5,"l":145.0,"c":146.5,"v":10114398,"ma5":157.2,"ma20":165.3,"ma60":156.88},{"d":"2025-10-16","o":147.5,"h":153.5,"l":147.5,"c":151.5,"v":12249163,"ma5":154.1,"ma20":164.53,"ma60":157.48},{"d":"2025-10-17","o":151.5,"h":152.0,"l":147.0,"c":148.0,"v":7699520,"ma5":150.4,"ma20":163.28,"ma60":158.07},{"d":"2025-10-20","o":149.5,"h":150.0,"l":147.0,"c":149.0,"v":3781292,"ma5":148.3,"ma20":162.12,"ma60":158.62},{"d":"2025-10-21","o":152.0,"h":165.0,"l":151.5,"c":165.0,"v":23492281,"ma5":152.0,"ma20":161.95,"ma60":159.43},{"d":"2025-10-22","o":165.0,"h":165.0,"l":160.0,"c":162.0,"v":12700120,"ma5":155.1,"ma20":161.62,"ma60":160.19},{"d":"2025-10-23","o":161.0,"h":164.0,"l":160.0,"c":163.0,"v":10199380,"ma5":157.4,"ma20":161.05,"ma60":160.95},{"d":"2025-10-27","o":167.0,"h":171.5,"l":164.5,"c":170.0,"v":21383584,"ma5":161.8,"ma20":160.95,"ma60":161.65},{"d":"2025-10-28","o":171.5,"h":172.0,"l":166.5,"c":167.5,"v":7281759,"ma5":165.5,"ma20":160.85,"ma60":162.37},{"d":"2025-10-29","o":169.5,"h":170.5,"l":167.5,"c":168.5,"v":6748679,"ma5":166.2,"ma20":160.7,"ma60":163.1},{"d":"2025-10-30","o":169.0,"h":169.0,"l":163.5,"c":165.5,"v":7381512,"ma5":166.9,"ma20":160.7,"ma60":163.82},{"d":"2025-10-31","o":167.5,"h":168.5,"l":164.0,"c":164.5,"v":6089360,"ma5":167.2,"ma20":160.62,"ma60":164.52},{"d":"2025-11-03","o":162.0,"h":166.0,"l":160.0,"c":165.5,"v":10130071,"ma5":166.3,"ma20":160.8,"ma60":165.26},{"d":"2025-11-04","o":165.5,"h":168.0,"l":160.0,"c":161.0,"v":6556765,"ma5":165.0,"ma20":160.85,"ma60":165.92},{"d":"2025-11-05","o":157.0,"h":157.5,"l":153.0,"c":156.5,"v":7797842,"ma5":162.6,"ma20":160.5,"ma60":166.46},{"d":"2025-11-06","o":158.0,"h":160.0,"l":155.0,"c":157.5,"v":10157470,"ma5":161.0,"ma20":160.05,"ma60":166.94},{"d":"2025-11-07","o":155.5,"h":156.5,"l":153.0,"c":155.0,"v":4411256,"ma5":159.1,"ma20":159.45,"ma60":167.17},{"d":"2025-11-10","o":157.5,"h":157.5,"l":155.0,"c":155.5,"v":2949408,"ma5":157.1,"ma20":158.9,"ma60":167.31},{"d":"2025-11-11","o":157.5,"h":159.0,"l":155.5,"c":155.5,"v":4877900,"ma5":156.0,"ma20":158.7,"ma60":167.22},{"d":"2025-11-12","o":156.0,"h":156.0,"l":143.0,"c":145.0,"v":24978013,"ma5":153.7,"ma20":158.62,"ma60":167.07},{"d":"2025-11-13","o":144.5,"h":154.0,"l":144.0,"c":151.5,"v":23570499,"ma5":152.5,"ma20":158.88,"ma60":166.93},{"d":"2025-11-14","o":147.5,"h":149.0,"l":140.5,"c":141.5,"v":13579431,"ma5":149.8,"ma20":158.38,"ma60":166.45},{"d":"2025-11-17","o":142.5,"h":145.0,"l":140.0,"c":141.5,"v":12019960,"ma5":147.0,"ma20":158.05,"ma60":166.04},{"d":"2025-11-18","o":140.5,"h":145.0,"l":139.0,"c":140.5,"v":13796433,"ma5":144.0,"ma20":157.62,"ma60":165.72},{"d":"2025-11-19","o":138.5,"h":139.0,"l":135.5,"c":137.0,"v":15833957,"ma5":142.4,"ma20":156.22,"ma60":165.19},{"d":"2025-11-20","o":140.0,"h":143.5,"l":139.0,"c":141.0,"v":16724072,"ma5":140.3,"ma20":155.18,"ma60":164.68},{"d":"2025-11-21","o":136.0,"h":144.0,"l":135.5,"c":142.5,"v":15835347,"ma5":140.5,"ma20":154.15,"ma60":164.04},{"d":"2025-11-24","o":141.0,"h":141.0,"l":135.0,"c":136.5,"v":18935916,"ma5":139.5,"ma20":152.47,"ma60":163.12},{"d":"2025-11-25","o":141.0,"h":142.0,"l":138.0,"c":138.5,"v":9727203,"ma5":139.1,"ma20":151.03,"ma60":162.22},{"d":"2025-11-26","o":138.5,"h":141.0,"l":137.0,"c":139.5,"v":7814588,"ma5":139.6,"ma20":149.57,"ma60":161.3},{"d":"2025-11-27","o":141.5,"h":144.5,"l":140.5,"c":142.5,"v":6804854,"ma5":139.9,"ma20":148.43,"ma60":160.41},{"d":"2025-11-28","o":144.0,"h":146.5,"l":141.5,"c":146.0,"v":4969259,"ma5":140.6,"ma20":147.5,"ma60":159.7},{"d":"2025-12-01","o":147.0,"h":151.5,"l":145.0,"c":147.0,"v":8456036,"ma5":142.7,"ma20":146.57,"ma60":159.1},{"d":"2025-12-02","o":148.5,"h":149.0,"l":145.0,"c":145.5,"v":4034336,"ma5":144.1,"ma20":145.8,"ma60":158.51},{"d":"2025-12-03","o":145.0,"h":147.0,"l":144.0,"c":144.5,"v":3490456,"ma5":145.1,"ma20":145.2,"ma60":158.03},{"d":"2025-12-04","o":146.0,"h":147.5,"l":143.5,"c":145.0,"v":3717473,"ma5":145.6,"ma20":144.57,"ma60":157.56},{"d":"2025-12-05","o":145.0,"h":149.0,"l":143.5,"c":147.0,"v":6463116,"ma5":145.8,"ma20":144.18,"ma60":157.23},{"d":"2025-12-08","o":145.5,"h":148.5,"l":144.5,"c":147.0,"v":5867090,"ma5":145.8,"ma20":143.75,"ma60":156.89},{"d":"2025-12-09","o":146.0,"h":150.0,"l":145.0,"c":147.0,"v":7969345,"ma5":146.1,"ma20":143.32,"ma60":156.54},{"d":"2025-12-10","o":147.0,"h":147.0,"l":145.0,"c":147.0,"v":5824792,"ma5":146.6,"ma20":143.43,"ma60":156.17},{"d":"2025-12-11","o":147.5,"h":149.5,"l":145.0,"c":145.5,"v":6649386,"ma5":146.7,"ma20":143.12,"ma60":155.77},{"d":"2025-12-12","o":147.5,"h":147.5,"l":142.0,"c":142.5,"v":4806993,"ma5":145.8,"ma20":143.18,"ma60":155.36},{"d":"2025-12-15","o":139.0,"h":141.0,"l":138.0,"c":140.0,"v":5403708,"ma5":144.4,"ma20":143.1,"ma60":154.81},{"d":"2025-12-16","o":139.5,"h":140.0,"l":135.0,"c":136.5,"v":6178977,"ma5":142.3,"ma20":142.9,"ma60":154.22},{"d":"2025-12-17","o":138.0,"h":141.0,"l":137.0,"c":139.5,"v":5248433,"ma5":140.8,"ma20":143.03,"ma60":153.73},{"d":"2025-12-18","o":139.0,"h":139.0,"l":137.5,"c":138.5,"v":3179282,"ma5":139.4,"ma20":142.9,"ma60":153.23},{"d":"2025-12-19","o":140.0,"h":140.5,"l":137.5,"c":139.0,"v":7089263,"ma5":138.7,"ma20":142.72,"ma60":152.64},{"d":"2025-12-22","o":141.5,"h":147.0,"l":141.5,"c":145.0,"v":9207478,"ma5":139.7,"ma20":143.15,"ma60":152.19},{"d":"2025-12-23","o":145.5,"h":147.5,"l":143.5,"c":145.0,"v":6930499,"ma5":141.4,"ma20":143.47,"ma60":151.78},{"d":"2025-12-24","o":144.5,"h":146.5,"l":144.0,"c":145.5,"v":6299343,"ma5":142.6,"ma20":143.78,"ma60":151.35},{"d":"2025-12-26","o":145.5,"h":146.5,"l":143.0,"c":143.5,"v":6887588,"ma5":143.6,"ma20":143.82,"ma60":150.98},{"d":"2025-12-29","o":145.5,"h":145.5,"l":142.5,"c":143.0,"v":3502692,"ma5":144.4,"ma20":143.68,"ma60":150.6},{"d":"2025-12-30","o":143.0,"h":143.0,"l":140.0,"c":141.0,"v":5573811,"ma5":143.6,"ma20":143.38,"ma60":150.25},{"d":"2025-12-31","o":142.0,"h":143.5,"l":141.0,"c":142.5,"v":2907877,"ma5":143.1,"ma20":143.22,"ma60":149.96},{"d":"2026-01-02","o":142.5,"h":142.5,"l":138.5,"c":141.5,"v":6326384,"ma5":142.3,"ma20":143.07,"ma60":149.59},{"d":"2026-01-05","o":142.0,"h":144.0,"l":138.0,"c":141.0,"v":10778164,"ma5":141.8,"ma20":142.88,"ma60":149.17},{"d":"2026-01-06","o":141.5,"h":145.5,"l":141.5,"c":145.0,"v":5000126,"ma5":142.2,"ma20":142.78,"ma60":148.8},{"d":"2026-01-07","o":148.0,"h":149.5,"l":146.0,"c":148.5,"v":9368546,"ma5":143.7,"ma20":142.85,"ma60":148.5},{"d":"2026-01-08","o":149.5,"h":150.0,"l":142.5,"c":144.0,"v":4883130,"ma5":144.0,"ma20":142.7,"ma60":148.24},{"d":"2026-01-09","o":143.5,"h":145.5,"l":140.5,"c":143.5,"v":4566514,"ma5":144.4,"ma20":142.53,"ma60":148.19},{"d":"2026-01-12","o":145.5,"h":158.5,"l":145.5,"c":158.5,"v":17376535,"ma5":147.9,"ma20":143.18,"ma60":148.39},{"d":"2026-01-13","o":170.5,"h":172.0,"l":162.5,"c":164.5,"v":26186384,"ma5":151.8,"ma20":144.28,"ma60":148.61},{"d":"2026-01-14","o":172.0,"h":176.5,"l":167.0,"c":169.0,"v":29003781,"ma5":155.9,"ma20":145.72,"ma60":148.96},{"d":"2026-01-15","o":169.0,"h":174.0,"l":163.0,"c":168.0,"v":22001571,"ma5":160.7,"ma20":147.3,"ma60":149.28},{"d":"2026-01-16","o":170.0,"h":179.5,"l":167.0,"c":175.0,"v":39066346,"ma5":167.0,"ma20":149.07,"ma60":149.44},{"d":"2026-01-19","o":180.0,"h":181.5,"l":169.5,"c":170.0,"v":23104545,"ma5":169.3,"ma20":150.65,"ma60":149.57},{"d":"2026-01-20","o":170.0,"h":170.0,"l":163.0,"c":164.5,"v":20082037,"ma5":169.3,"ma20":151.93,"ma60":149.6},{"d":"2026-01-21","o":162.5,"h":164.5,"l":158.5,"c":160.0,"v":14720716,"ma5":167.5,"ma20":152.68,"ma60":149.43},{"d":"2026-01-22","o":163.0,"h":168.0,"l":163.0,"c":165.0,"v":8899620,"ma5":166.9,"ma20":153.68,"ma60":149.39},{"d":"2026-01-23","o":167.0,"h":176.0,"l":166.5,"c":170.0,"v":18831412,"ma5":165.9,"ma20":154.9,"ma60":149.42},{"d":"2026-01-26","o":170.0,"h":170.0,"l":164.5,"c":165.0,"v":5907329,"ma5":164.9,"ma20":155.97,"ma60":149.41},{"d":"2026-01-27","o":165.0,"h":170.5,"l":163.5,"c":165.0,"v":8308675,"ma5":165.0,"ma20":157.07,"ma60":149.42},{"d":"2026-01-28","o":168.5,"h":181.0,"l":166.5,"c":177.0,"v":30807132,"ma5":168.4,"ma20":158.88,"ma60":149.61},{"d":"2026-01-29","o":177.0,"h":188.0,"l":172.5,"c":178.5,"v":34190516,"ma5":171.1,"ma20":160.68,"ma60":149.9},{"d":"2026-01-30","o":176.0,"h":195.5,"l":173.5,"c":195.5,"v":56720614,"ma5":176.2,"ma20":163.38,"ma60":150.55},{"d":"2026-02-02","o":195.5,"h":197.5,"l":176.5,"c":184.0,"v":52026415,"ma5":180.0,"ma20":165.53,"ma60":150.99},{"d":"2026-02-03","o":191.5,"h":195.0,"l":173.0,"c":180.0,"v":47456968,"ma5":183.0,"ma20":167.28,"ma60":151.41},{"d":"2026-02-04","o":181.5,"h":199.0,"l":181.5,"c":199.0,"v":51767478,"ma5":187.4,"ma20":169.8,"ma60":152.13},{"d":"2026-02-05","o":198.5,"h":204.0,"l":189.0,"c":190.5,"v":43479512,"ma5":189.8,"ma20":172.12,"ma60":152.72},{"d":"2026-02-06","o":184.5,"h":187.0,"l":176.0,"c":181.0,"v":26186386,"ma5":186.9,"ma20":174.0,"ma60":153.32},{"d":"2026-02-09","o":188.0,"h":190.0,"l":181.0,"c":181.5,"v":25439140,"ma5":186.4,"ma20":175.15,"ma60":153.82},{"d":"2026-02-10","o":182.0,"h":183.0,"l":177.0,"c":179.5,"v":15412486,"ma5":186.3,"ma20":175.9,"ma60":154.45},{"d":"2026-02-11","o":180.0,"h":182.0,"l":177.0,"c":178.0,"v":7933789,"ma5":182.1,"ma20":176.35,"ma60":155.06},{"d":"2026-02-23","o":185.0,"h":195.5,"l":183.5,"c":195.5,"v":29488739,"ma5":183.1,"ma20":177.72,"ma60":155.97},{"d":"2026-02-24","o":200.5,"h":214.0,"l":200.0,"c":211.5,"v":34422018,"ma5":189.2,"ma20":179.55,"ma60":157.22},{"d":"2026-02-25","o":212.0,"h":212.0,"l":201.0,"c":205.0,"v":30652114,"ma5":193.9,"ma20":181.3,"ma60":158.28},{"d":"2026-02-26","o":207.5,"h":213.5,"l":204.0,"c":208.5,"v":29039302,"ma5":199.7,"ma20":183.5,"ma60":159.38},{"d":"2026-03-02","o":198.5,"h":206.5,"l":196.0,"c":197.5,"v":22657070,"ma5":203.6,"ma20":185.38,"ma60":160.4},{"d":"2026-03-03","o":198.0,"h":205.0,"l":191.5,"c":192.5,"v":19842225,"ma5":203.0,"ma20":186.75,"ma60":161.3},{"d":"2026-03-04","o":187.0,"h":189.0,"l":177.0,"c":180.0,"v":16441805,"ma5":196.7,"ma20":187.25,"ma60":161.97},{"d":"2026-03-05","o":188.5,"h":189.0,"l":174.0,"c":177.0,"v":24810772,"ma5":191.1,"ma20":187.85,"ma60":162.55},{"d":"2026-03-06","o":175.5,"h":179.0,"l":172.5,"c":175.0,"v":8805225,"ma5":184.4,"ma20":188.35,"ma60":163.03},{"d":"2026-03-09","o":157.5,"h":163.0,"l":157.5,"c":163.0,"v":16844670,"ma5":177.5,"ma20":187.65,"ma60":163.3},{"d":"2026-03-10","o":168.5,"h":170.5,"l":164.0,"c":168.0,"v":11675221,"ma5":172.6,"ma20":187.12,"ma60":163.68},{"d":"2026-03-11","o":170.0,"h":175.5,"l":170.0,"c":174.5,"v":9965436,"ma5":171.5,"ma20":186.07,"ma60":164.18},{"d":"2026-03-12","o":172.5,"h":178.0,"l":170.5,"c":171.0,"v":6263833,"ma5":170.3,"ma20":185.43,"ma60":164.61},{"d":"2026-03-13","o":169.5,"h":188.5,"l":168.5,"c":188.5,"v":23154460,"ma5":173.0,"ma20":185.85,"ma60":165.3},{"d":"2026-03-16","o":195.0,"h":202.0,"l":184.5,"c":196.0,"v":38866475,"ma5":179.6,"ma20":185.7,"ma60":166.12},{"d":"2026-03-17","o":200.0,"h":205.0,"l":195.0,"c":198.5,"v":27390175,"ma5":185.7,"ma20":186.1,"ma60":166.97},{"d":"2026-03-18","o":202.5,"h":209.0,"l":198.0,"c":206.0,"v":30776203,"ma5":192.0,"ma20":187.35,"ma60":167.96},{"d":"2026-03-19","o":203.5,"h":219.5,"l":203.0,"c":210.5,"v":34502597,"ma5":199.9,"ma20":188.8,"ma60":169.04},{"d":"2026-03-20","o":216.0,"h":218.0,"l":203.5,"c":210.0,"v":25800253,"ma5":204.2,"ma20":190.32,"ma60":170.17},{"d":"2026-03-23","o":200.5,"h":207.5,"l":197.5,"c":201.5,"v":17694773,"ma5":205.3,"ma20":191.5,"ma60":171.19},{"d":"2026-03-24","o":207.0,"h":208.5,"l":190.0,"c":197.5,"v":18118796,"ma5":205.1,"ma20":191.6,"ma60":172.21},{"d":"2026-03-25","o":204.0,"h":214.0,"l":204.0,"c":207.5,"v":19088956,"ma5":205.4,"ma20":191.4,"ma60":173.34},{"d":"2026-03-26","o":210.5,"h":225.0,"l":207.0,"c":219.5,"v":39985495,"ma5":207.2,"ma20":192.12,"ma60":174.69},{"d":"2026-03-27","o":214.0,"h":234.5,"l":210.0,"c":230.5,"v":50234521,"ma5":211.3,"ma20":193.22,"ma60":176.22},{"d":"2026-03-30","o":225.5,"h":229.5,"l":215.0,"c":227.5,"v":27862497,"ma5":216.5,"ma20":194.72,"ma60":177.59},{"d":"2026-03-31","o":220.5,"h":221.5,"l":204.5,"c":207.0,"v":37084367,"ma5":218.4,"ma20":195.45,"ma60":178.62},{"d":"2026-04-01","o":219.0,"h":222.0,"l":215.0,"c":219.5,"v":22601759,"ma5":220.8,"ma20":197.43,"ma60":179.86}],
+   signals:[{"i":3,"d":"2025-04-08","t":"B4","px":93.2,"dev":-15.0},{"i":16,"d":"2025-04-25","t":"S3","px":96.5,"dev":-1.0},{"i":34,"d":"2025-05-22","t":"B3","px":101.0,"dev":0.8},{"i":40,"d":"2025-06-02","t":"B3","px":102.0,"dev":0.2},{"i":48,"d":"2025-06-12","t":"S1","px":101.0,"dev":-2.4},{"i":60,"d":"2025-06-30","t":"S3","px":101.0,"dev":-0.7},{"i":81,"d":"2025-07-29","t":"S4","px":128.0,"dev":13.9},{"i":90,"d":"2025-08-11","t":"S4","px":141.5,"dev":17.6},{"i":120,"d":"2025-09-22","t":"S3","px":174.5,"dev":-1.4},{"i":130,"d":"2025-10-08","t":"S3","px":167.0,"dev":-0.6},{"i":148,"d":"2025-11-05","t":"S1","px":156.5,"dev":-2.5},{"i":149,"d":"2025-11-06","t":"S3","px":157.5,"dev":-1.6},{"i":167,"d":"2025-12-02","t":"S2","px":145.5,"dev":-0.2},{"i":175,"d":"2025-12-12","t":"S1","px":142.5,"dev":-0.5},{"i":181,"d":"2025-12-22","t":"B1","px":145.0,"dev":1.3},{"i":182,"d":"2025-12-23","t":"B3","px":145.0,"dev":1.1},{"i":187,"d":"2025-12-31","t":"S3","px":142.5,"dev":-0.5},{"i":195,"d":"2026-01-13","t":"S4","px":164.5,"dev":14.0},{"i":208,"d":"2026-01-30","t":"S4","px":195.5,"dev":19.7},{"i":216,"d":"2026-02-11","t":"B3","px":178.0,"dev":0.9},{"i":218,"d":"2026-02-24","t":"S4","px":211.5,"dev":17.8},{"i":226,"d":"2026-03-09","t":"B4","px":163.0,"dev":-13.1},{"i":237,"d":"2026-03-24","t":"B3","px":197.5,"dev":3.1},{"i":239,"d":"2026-03-26","t":"S4","px":219.5,"dev":14.3}],
+   devHi:13, devLo:-13,
+   curated:[
+     {d:"2025-04-08",note:"關稅股災中負乖離擴大至 −15%（4/9 最低 84.2），④跌深反彈買點——這裡是本年度最低點，其後一年最高漲至 234.5（約 +178%）。"},
+     {d:"2025-07-29",note:"AI／PCB 題材第一波急漲，正乖離 +13.9% 觸發⑧停利；8/11 乖離更達 +17.6%，其後進入兩個月高檔整理。"},
+     {d:"2025-11-05",note:"月線走平下彎後收盤跌破（⑤跌破賣出），開啟 11–12 月約 −20% 的修正段。"},
+     {d:"2025-11-06",note:"跌破次日反彈觸及下彎月線即遇壓回落（⑦），確認修正開始——⑤＋⑦連續出現是較可靠的出場組合。"},
+     {d:"2025-12-02",note:"反彈短暫站上下彎月線又跌回（⑥假突破），誘多結束後續跌至 138。"},
+     {d:"2025-12-22",note:"月線走平後帶量重新站上（①突破買進），此後展開 1–3 月主升段，從 145 漲到 234.5。"},
+     {d:"2026-02-11",note:"急漲後首次回測月線獲支撐（③），隔日續漲創高。"},
+     {d:"2026-03-26",note:"創高過程正乖離再達 +14.3%（⑧）；一年內⑧訊號多次出現在 +14%〜+20%，可作為本股的停利標尺。"},
+   ],
+   advice:{
+     asof:"2026/04/01", close:219.5, chg:"+0.5", ma20:197.4, ma60:179.9, dev20:11.2,
+     hi52:234.5, lo52:84.2,
+     ladder:{min:170, max:242, bands:[
+       {kind:"tp",  lo:230, hi:234.5, label:"停利／壓力 前高區"},
+       {kind:"tp2", px:226, label:"⑧ 乖離+14%"},
+       {kind:"now", px:219.5, label:"收盤 219.5"},
+       {kind:"buyA",lo:197, hi:200, label:"③ 回測月線買進"},
+       {kind:"buyB",lo:178, hi:182, label:"季線支撐買進"},
+       {kind:"stop",px:176, label:"停損 跌破季線 −2%"},
+     ]},
+     buys:[
+       "<b>不追高</b>：收盤正乖離仍有 +11.2%，離⑧訊號門檻不遠——等回檔而非追價。",
+       "<b>首選（法則③）</b>：拉回測試上揚月線 <b>197–200</b> 不破時買進；若跌破後 3 日內站回（②假跌破）亦可進場。",
+       "<b>次選</b>：月線失守時退守上揚季線 <b>178–182</b> 承接。",
+     ],
+     sells:[
+       "<b>停利（法則⑧＋前高）</b>：<b>225–234.5</b>（乖離 ≥ +14% 或觸及前高 234.5）分批停利——本股一年內⑧訊號屢試不爽。",
+       "<b>停損（法則⑤）</b>：收盤跌破季線（約 <b>176</b>）出場；若⑤後出現⑦反彈遇壓，為最後出場機會。",
+     ],
+     stance:"波段強勢但短線乖離偏大：持有者沿月線續抱、以⑧標尺分批停利；空手者等待③或②的回檔買點，勿在乖離 >10% 時追進。"
+   }
+ }
+};
+const RULEMAP = {B1:1,B2:2,B3:3,B4:4,S1:5,S2:6,S3:7,S4:8};
+const CIRC = ["","①","②","③","④","⑤","⑥","⑦","⑧"];
+const state = {months:12, ma20:true, ma60:true, buy:true, sell:true};
+
+/* ================= utils ================= */
+const $ = s => document.querySelector(s);
+function el(tag, attrs, ...kids){
+  const ns = "http://www.w3.org/2000/svg";
+  const isSvg = ["svg","g","path","rect","line","circle","text","polyline","polygon","tspan"].includes(tag);
+  const e = isSvg ? document.createElementNS(ns, tag) : document.createElement(tag);
+  for (const k in (attrs||{})){
+    if (k === "text") e.textContent = attrs[k];
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  for (const kid of kids) if (kid) e.appendChild(kid);
+  return e;
+}
+const fmt = (x, dp) => x==null ? "–" : x.toLocaleString("zh-TW",{minimumFractionDigits:dp??0, maximumFractionDigits:dp??2});
+const fmtVol = v => fmt(Math.round(v/1000)) + " 張";
+function ruleColor(id){ return id<=4 ? "var(--buy)" : "var(--sell)"; }
+
+/* ============ catmull-rom helper ============ */
+function crPath(pts, t=1){
+  if (pts.length<2) return "";
+  let d = `M ${pts[0][0]},${pts[0][1]}`;
+  for (let i=0;i<pts.length-1;i++){
+    const p0 = pts[Math.max(0,i-1)], p1 = pts[i], p2 = pts[i+1], p3 = pts[Math.min(pts.length-1,i+2)];
+    const c1 = [p1[0]+(p2[0]-p0[0])/6*t, p1[1]+(p2[1]-p0[1])/6*t];
+    const c2 = [p2[0]-(p3[0]-p1[0])/6*t, p2[1]-(p3[1]-p1[1])/6*t];
+    d += ` C ${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+function sampleCR(pts, n=400){
+  // numeric sampling of the same spline for y-at-x lookups
+  const out = [];
+  for (let i=0;i<pts.length-1;i++){
+    const p0 = pts[Math.max(0,i-1)], p1 = pts[i], p2 = pts[i+1], p3 = pts[Math.min(pts.length-1,i+2)];
+    const c1 = [p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6];
+    const c2 = [p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6];
+    const steps = Math.ceil(n/pts.length);
+    for (let s=0;s<=steps;s++){
+      const u=s/steps, v=1-u;
+      out.push([v*v*v*p1[0]+3*v*v*u*c1[0]+3*v*u*u*c2[0]+u*u*u*p2[0],
+                v*v*v*p1[1]+3*v*v*u*c1[1]+3*v*u*u*c2[1]+u*u*u*p2[1]]);
+    }
+  }
+  return out;
+}
+
+/* ================= schematic ================= */
+const schema = {sel:null};
+function buildSchematic(){
+  const W=1000, H=430;
+  const maPts = [[20,296],[120,302],[230,270],[350,218],[470,172],[590,152],[700,170],[800,216],[900,272],[985,306]];
+  const maSamp = sampleCR(maPts);
+  const maAt = x => {
+    let best = maSamp[0];
+    for (const p of maSamp) if (Math.abs(p[0]-x) < Math.abs(best[0]-x)) best = p;
+    return best[1];
+  };
+  // price anchors: [x, offset-from-MA, ruleId?]  (y down; +offset = below MA)
+  const anchors = [
+    [20,+80],[95,+62],[140,+36],[172,0,1],[205,-46],[238,-18],[262,+14,2],[292,-26],
+    [332,-64],[372,-4,3],[415,-64],[465,-110],[515,-136,8],[565,-90],[608,-38],
+    [645,+16,5],[680,+48],[718,-14,6],[752,+30],[786,+62],[820,+4,7],[858,+66],
+    [900,+124,4],[945,+82],[985,+62]
+  ];
+  const pricePts = anchors.map(a => [a[0], maAt(a[0])+a[1]]);
+  const markers = anchors.map((a,i)=> a[2] ? {id:a[2], x:pricePts[i][0], y:pricePts[i][1]} : null).filter(Boolean);
+
+  const svg = el("svg",{viewBox:`0 0 ${W} ${H}`, role:"img",
+    "aria-label":"葛蘭碧八大法則示意圖：股價曲線圍繞移動平均線產生四個買點與四個賣點"});
+  // deviation envelope (hidden until rule 4/8 selected)
+  const envUp = maSamp.map(p=>`${p[0].toFixed(1)},${(p[1]-92).toFixed(1)}`).join(" ");
+  const envDn = maSamp.map(p=>`${p[0].toFixed(1)},${(p[1]+92).toFixed(1)}`).join(" ");
+  svg.appendChild(el("polyline",{points:envUp, fill:"none", stroke:"var(--sell)","stroke-width":1.5,
+    opacity:0, id:"envUp"}));
+  svg.appendChild(el("polyline",{points:envDn, fill:"none", stroke:"var(--buy)","stroke-width":1.5,
+    opacity:0, id:"envDn"}));
+  svg.appendChild(el("text",{x:236,y:maAt(266)-102, class:"sm-label", id:"envUpT", opacity:0, text:"正乖離過大 → ⑧ 停利"}));
+  svg.appendChild(el("text",{x:614,y:maAt(654)+118, class:"sm-label", id:"envDnT", opacity:0, text:"負乖離過大 → ④ 搶反彈"}));
+  // MA + price
+  svg.appendChild(el("path",{d:crPath(maPts), fill:"none", stroke:"var(--ma20)","stroke-width":5,
+    "stroke-linecap":"round", opacity:.9}));
+  svg.appendChild(el("path",{d:crPath(pricePts,.85), fill:"none", stroke:"var(--ink)","stroke-width":2,
+    "stroke-linecap":"round"}));
+  svg.appendChild(el("text",{x:26,y:maAt(30)+108, class:"sm-label", text:"股價"}));
+  svg.appendChild(el("text",{x:26,y:maAt(26)-14, class:"sm-label", style:"fill:var(--ma20)", text:"移動平均線 MA"}));
+  // markers
+  for (const m of markers){
+    const g = el("g",{class:"sm-marker", "data-rule":m.id, tabindex:"0", role:"button",
+      "aria-label":RULES[m.id-1].name+"："+RULES[m.id-1].short});
+    g.appendChild(el("circle",{cx:m.x, cy:m.y, r:22, fill:"transparent"})); // hit area
+    g.appendChild(el("circle",{class:"dot", cx:m.x, cy:m.y, r:14,
+      fill: m.id<=4 ? "var(--buy)" : "var(--sell)", stroke:"var(--surface)","stroke-width":2}));
+    const t = el("text",{x:m.x, y:m.y+4.5, "text-anchor":"middle"}); t.textContent = String(m.id);
+    g.appendChild(t);
+    g.addEventListener("click", ()=>selectRule(m.id));
+    g.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();selectRule(m.id);} });
+    g.addEventListener("pointerenter", ()=>hoverRule(m.id,true));
+    g.addEventListener("pointerleave", ()=>hoverRule(m.id,false));
+    svg.appendChild(g);
+  }
+  $("#schemaBox").appendChild(svg);
+
+  // rule cards
+  for (const r of RULES){
+    const card = el("button",{class:"rule-card", type:"button", "aria-pressed":"false", "data-rule":r.id});
+    card.appendChild(el("span",{class:"rnum "+(r.side==="buy"?"buy":"sell"), text:String(r.id)}));
+    const box = el("span");
+    box.appendChild(el("span",{class:"t", text:r.name.replace(/^[①-⑧] /,"")}));
+    box.appendChild(el("br"));
+    box.appendChild(el("span",{class:"s", text:r.short}));
+    card.appendChild(box);
+    card.addEventListener("click", ()=>selectRule(r.id === schema.sel ? null : r.id));
+    card.addEventListener("pointerenter", ()=>hoverRule(r.id,true));
+    card.addEventListener("pointerleave", ()=>hoverRule(r.id,false));
+    (r.side==="buy" ? $("#buyCards") : $("#sellCards")).appendChild(card);
+  }
+  selectRule(1);
+}
+function hoverRule(id,on){
+  document.querySelectorAll(".sm-marker").forEach(m=>{
+    const mine = +m.dataset.rule === id;
+    m.classList.toggle("dim", on && !mine && schema.sel === null);
+    m.classList.toggle("hot", on && mine);
+  });
+}
+function selectRule(id){
+  schema.sel = id;
+  document.querySelectorAll("button.rule-card").forEach(c=>c.setAttribute("aria-pressed", String(+c.dataset.rule===id)));
+  document.querySelectorAll(".sm-marker").forEach(m=>{
+    m.classList.toggle("dim", id!==null && +m.dataset.rule!==id);
+    m.classList.toggle("hot", +m.dataset.rule===id);
+  });
+  const showEnv = id===4 || id===8;
+  for (const eid of ["envUp","envDn","envUpT","envDnT"])
+    document.getElementById(eid).setAttribute("opacity", showEnv ? (eid.includes("Up") ? (id===8?0.9:0.25) : (id===4?0.9:0.25)) : 0);
+  const box = $("#ruleDetail");
+  box.textContent = "";
+  if (id===null){ box.appendChild(el("span",{text:"點選任一法則查看說明。"})); return; }
+  const r = RULES[id-1];
+  const h = el("div");
+  h.appendChild(el("b",{text:r.name+"　"}));
+  h.appendChild(el("span",{text:r.long+" "}));
+  h.appendChild(el("span",{class:"ref", text:r.tip}));
+  box.appendChild(h);
+  // where it appeared in real data
+  const where = el("div",{class:"where"});
+  let any=false;
+  for (const sym of ["2330","4958"]){
+    const st = STOCKS[sym];
+    for (const s of st.signals){
+      if (RULEMAP[s.t]!==id) continue;
+      any=true;
+      const a = el("a",{href:"#card"+sym});
+      a.appendChild(el("b",{text:st.name+" "}));
+      a.appendChild(document.createTextNode(s.d.slice(2).replace(/-/g,"/")+" @ "+fmt(s.px, sym==="4958"?1:0)));
+      a.addEventListener("click", ()=>{ setTimeout(()=>flashSignal(sym, s.d), 350); });
+      where.appendChild(a);
+    }
+  }
+  if (any){
+    const lab = el("div",{class:"ref", text:"過去一年實際出現："});
+    lab.style.width="100%";
+    box.appendChild(lab);
+    box.appendChild(where);
+  } else {
+    box.appendChild(el("div",{class:"ref", text:"（此法則過去一年未在兩檔個股的 20 日均線上被偵測到）"}));
+  }
+}
+
+/* ================= candlestick charts ================= */
+const charts = {};
+function visibleRows(st){
+  const rows = st.rows;
+  if (state.months>=12) return rows;
+  const last = new Date(rows[rows.length-1].d);
+  last.setMonth(last.getMonth()-state.months);
+  const cut = last.toISOString().slice(0,10);
+  return rows.filter(r=>r.d>=cut);
+}
+function buildStockCard(sym){
+  const st = STOCKS[sym];
+  const card = $("#card"+sym);
+  card.textContent = "";
+  const last = st.rows[st.rows.length-1], prev = st.rows[st.rows.length-2];
+  const chg = last.c - prev.c, pct = chg/prev.c*100;
+  const head = el("div",{class:"stock-head"});
+  head.appendChild(el("h3",{text:st.name}));
+  head.appendChild(el("span",{class:"code", text:st.code+"・日線"}));
+  const px = el("span",{class:"px", text:fmt(last.c, sym==="4958"?1:0)});
+  px.style.color = chg>=0 ? "var(--up)" : "var(--dn)";
+  head.appendChild(px);
+  head.appendChild(el("span",{class:"pxmeta",
+    text:(chg>=0?"+":"")+fmt(chg, sym==="4958"?1:0)+" ("+(chg>=0?"+":"")+pct.toFixed(2)+"%)・"+last.d.replace(/-/g,"/")+" 收盤"}));
+  card.appendChild(head);
+  const legend = el("div",{class:"legend"});
+  const items = [
+    ["swatch-hollow","上漲（紅・空心）"],["swatch-solid","下跌（綠・實心）"],
+    ["line-ma20","月線 MA20"],["line-ma60","季線 MA60"],
+    ["dot-buy","買進訊號 ①〜④"],["dot-sell","賣出訊號 ⑤〜⑧"]];
+  for (const [kind,label] of items){
+    const li = el("span",{class:"li"});
+    if (kind==="swatch-hollow") li.appendChild(el("span",{class:"keyrect", style:"border:2px solid var(--up);background:transparent"}));
+    else if (kind==="swatch-solid") li.appendChild(el("span",{class:"keyrect", style:"background:var(--dn)"}));
+    else if (kind==="line-ma20") li.appendChild(el("span",{class:"keyswatch", style:"border-color:var(--ma20)"}));
+    else if (kind==="line-ma60") li.appendChild(el("span",{class:"keyswatch", style:"border-color:var(--ma60)"}));
+    else if (kind==="dot-buy") li.appendChild(el("span",{class:"keyrect", style:"background:var(--buy);border-radius:50%"}));
+    else li.appendChild(el("span",{class:"keyrect", style:"background:var(--sell);border-radius:50%"}));
+    li.appendChild(document.createTextNode(label));
+    legend.appendChild(li);
+  }
+  card.appendChild(legend);
+  const scroll = el("div",{class:"chart-scroll"});
+  const tooltip = el("div",{class:"tooltip"});
+  scroll.appendChild(tooltip);
+  card.appendChild(scroll);
+  const strip = el("div",{class:"sig-strip"});
+  const chipsBox = el("div",{class:"sig-chips", role:"group","aria-label":st.name+" 實戰解讀"});
+  const note = el("div",{class:"sig-note"});
+  strip.appendChild(el("div",{class:"eyebrow", text:"實戰解讀（點選展開）", style:"margin-bottom:6px"}));
+  strip.appendChild(chipsBox);
+  strip.appendChild(note);
+  card.appendChild(strip);
+  card.appendChild(buildTables(sym));
+  charts[sym] = {scroll, tooltip, chipsBox, note, curatedSel:null};
+  // curated chips
+  st.curated.forEach((c,idx)=>{
+    const sig = st.signals.find(s=>s.d===c.d);
+    const rid = sig ? RULEMAP[sig.t] : 0;
+    const b = el("button",{type:"button","aria-pressed":"false","data-d":c.d});
+    b.appendChild(el("span",{class:"n", style:"background:"+ruleColor(rid), text:String(rid||"·")}));
+    b.appendChild(document.createTextNode(c.d.slice(2).replace(/-/g,"/")));
+    b.addEventListener("click", ()=>{ selectCurated(sym, idx); flashSignal(sym, c.d); });
+    chipsBox.appendChild(b);
+  });
+  selectCurated(sym, 0);
+  renderChart(sym);
+}
+function selectCurated(sym, idx){
+  const st = STOCKS[sym], ch = charts[sym];
+  ch.curatedSel = idx;
+  const c = st.curated[idx];
+  const sig = st.signals.find(s=>s.d===c.d);
+  const rid = sig ? RULEMAP[sig.t] : 0;
+  ch.chipsBox.querySelectorAll("button").forEach((b,i)=>b.setAttribute("aria-pressed", String(i===idx)));
+  ch.note.textContent = "";
+  const w = el("span",{class:"when", text:c.d.replace(/-/g,"/")+(rid?("・法則"+CIRC[rid]+(sig?"・訊號價 "+fmt(sig.px, sym==="4958"?1:0):"")):"")});
+  ch.note.appendChild(el("b",{text: rid ? RULES[rid-1].name+"　" : ""}));
+  ch.note.appendChild(document.createTextNode(c.note+" "));
+  ch.note.appendChild(w);
+}
+function renderChart(sym){
+  const st = STOCKS[sym], ch = charts[sym];
+  const rows = visibleRows(st);
+  const n = rows.length;
+  const W=980, priceH=320, volH=74, gap=26, padT=14, padR=64, padL=10, axisB=26;
+  const H = padT+priceH+gap+volH+axisB;
+  const plotW = W-padL-padR;
+  const slot = plotW/n, bw = Math.max(1.6, Math.min(11, slot*0.68));
+  let lo=Infinity, hi=-Infinity, vmax=0;
+  for (const r of rows){
+    lo = Math.min(lo, r.l, (state.ma20&&r.ma20)||Infinity, (state.ma60&&r.ma60)||Infinity);
+    hi = Math.max(hi, r.h, (state.ma20&&r.ma20)||-Infinity, (state.ma60&&r.ma60)||-Infinity);
+    vmax = Math.max(vmax, r.v);
+  }
+  const span = hi-lo; lo -= span*.05; hi += span*.05;
+  const X = i => padL + slot*(i+0.5);
+  const Y = p => padT + priceH*(1-(p-lo)/(hi-lo));
+  const VY = v => padT+priceH+gap + volH*(1-v/vmax);
+  const old = ch.scroll.querySelector("svg");
+  if (old) old.remove();
+  const svg = el("svg",{viewBox:`0 0 ${W} ${H}`, role:"img",
+    "aria-label":st.name+" 過去一年日 K 線圖，含月線、季線與葛蘭碧買賣訊號；詳細數值見下方表格檢視"});
+  ch.svg = svg; ch.rows = rows; ch.X=X; ch.Y=Y; ch.geo={W,H,padT,priceH,padL,padR,slot};
+  /* grid + y labels */
+  const steps = 5;
+  for (let i=0;i<=steps;i++){
+    const p = lo + (hi-lo)*i/steps, y = Y(p);
+    svg.appendChild(el("line",{class:"gridline", x1:padL, x2:W-padR, y1:y, y2:y}));
+    svg.appendChild(el("text",{class:"axistext", x:W-padR+8, y:y+4, text:fmt(Math.round(p/st.tick)*st.tick, sym==="4958"?1:0)}));
+  }
+  /* x ticks: month boundaries */
+  let lastM = "";
+  const mstep = n>150 ? 2 : 1;
+  let mcount = 0;
+  for (let i=0;i<n;i++){
+    const m = rows[i].d.slice(0,7);
+    if (m!==lastM){
+      lastM = m;
+      if (mcount++ % mstep === 0){
+        svg.appendChild(el("line",{class:"axisline", x1:X(i), x2:X(i), y1:padT+priceH, y2:padT+priceH+5}));
+        svg.appendChild(el("text",{class:"axistext", x:Math.max(X(i), padL+16), y:H-8, "text-anchor":"middle",
+          text: m.slice(2).replace("-","/")}));
+      }
+    }
+  }
+  svg.appendChild(el("line",{class:"axisline", x1:padL, x2:W-padR, y1:padT+priceH, y2:padT+priceH}));
+  /* volume */
+  svg.appendChild(el("text",{class:"axistext", x:W-padR+8, y:VY(vmax)+4, text:fmtVol(vmax)}));
+  svg.appendChild(el("line",{class:"axisline", x1:padL, x2:W-padR, y1:padT+priceH+gap+volH, y2:padT+priceH+gap+volH}));
+  for (let i=0;i<n;i++){
+    const r = rows[i], up = r.c>=r.o;
+    svg.appendChild(el("rect",{x:X(i)-bw/2, y:VY(r.v), width:bw, height:Math.max(1, padT+priceH+gap+volH-VY(r.v)),
+      fill: up?"var(--up)":"var(--dn)", opacity:.45}));
+  }
+  /* candles */
+  for (let i=0;i<n;i++){
+    const r = rows[i], up = r.c>=r.o, col = up?"var(--up)":"var(--dn)";
+    svg.appendChild(el("line",{x1:X(i), x2:X(i), y1:Y(r.h), y2:Y(r.l), stroke:col,"stroke-width":1}));
+    const by = Y(Math.max(r.o,r.c)), bh = Math.max(1.2, Math.abs(Y(r.o)-Y(r.c)));
+    svg.appendChild(el("rect",{x:X(i)-bw/2, y:by, width:bw, height:bh,
+      fill: up ? "var(--surface)" : col, stroke:col, "stroke-width":1.1}));
+  }
+  /* MA lines + end labels (nudge labels away from axis text and each other) */
+  const axisLabelYs = [];
+  for (let i=0;i<=steps;i++) axisLabelYs.push(Y(lo + (hi-lo)*i/steps));
+  const placedYs = [];
+  for (const [key,on,color,label] of [["ma20",state.ma20,"var(--ma20)","月線"],["ma60",state.ma60,"var(--ma60)","季線"]]){
+    if (!on) continue;
+    const pts = rows.map((r,i)=> r[key]!=null ? `${X(i).toFixed(1)},${Y(r[key]).toFixed(1)}` : null).filter(Boolean);
+    svg.appendChild(el("polyline",{points:pts.join(" "), fill:"none", stroke:color, "stroke-width":2,
+      "stroke-linejoin":"round"}));
+    const lastVal = rows[n-1][key];
+    if (lastVal!=null){
+      let ly = Y(lastVal)-8;
+      const clash = y => axisLabelYs.concat(placedYs).some(o=>Math.abs(o-y)<13);
+      while (clash(ly)) ly -= 13;
+      placedYs.push(ly);
+      const g = el("g");
+      g.appendChild(el("line",{x1:W-padR+2, x2:W-padR+14, y1:ly-4, y2:ly-4, stroke:color,"stroke-width":3}));
+      g.appendChild(el("text",{class:"dlabel", x:W-padR+17, y:ly, text:label}));
+      svg.appendChild(g);
+    }
+  }
+  /* 52w hi/lo direct labels (only on full range), offset sideways from the point */
+  if (state.months>=12){
+    let hiI=0, loI=0;
+    rows.forEach((r,i)=>{ if(r.h>rows[hiI].h) hiI=i; if(r.l<rows[loI].l) loI=i; });
+    const side = i => X(i) > (padL+plotW/2);
+    svg.appendChild(el("text",{class:"dlabel", x:X(hiI)+(side(hiI)?-14:14), y:Y(rows[hiI].h)-4,
+      "text-anchor":side(hiI)?"end":"start", text:"最高 "+fmt(rows[hiI].h, sym==="4958"?1:0)}));
+    svg.appendChild(el("text",{class:"dlabel", x:X(loI)+(side(loI)?-14:14), y:Y(rows[loI].l)+14,
+      "text-anchor":side(loI)?"end":"start", text:"最低 "+fmt(rows[loI].l, sym==="4958"?1:0)}));
+  }
+  /* signals */
+  const idxByDate = {}; rows.forEach((r,i)=>idxByDate[r.d]=i);
+  let lastBuyX=-99, lastSellX=-99, buyLvl=0, sellLvl=0;
+  for (const s of st.signals){
+    const rid = RULEMAP[s.t], isBuy = rid<=4;
+    if (isBuy && !state.buy) continue;
+    if (!isBuy && !state.sell) continue;
+    const i = idxByDate[s.d];
+    if (i==null) continue;
+    const r = rows[i], x = X(i);
+    if (isBuy){ buyLvl = (x-lastBuyX<22) ? (buyLvl+1)%2 : 0; lastBuyX=x; }
+    else { sellLvl = (x-lastSellX<22) ? (sellLvl+1)%2 : 0; lastSellX=x; }
+    const y = isBuy ? Y(r.l)+16+ (buyLvl*21) : Y(r.h)-16-(sellLvl*21);
+    const g = el("g",{class:"sigmark", "data-d":s.d, tabindex:"0", role:"button",
+      "aria-label":s.d+" "+RULES[rid-1].name+"，訊號價 "+fmt(s.px, sym==="4958"?1:0)});
+    g.appendChild(el("line",{x1:x, x2:x, y1:isBuy?Y(r.l)+2:Y(r.h)-2, y2:y+(isBuy?-9:9),
+      stroke:isBuy?"var(--buy)":"var(--sell)", "stroke-width":1}));
+    g.appendChild(el("circle",{cx:x, cy:y, r:13, fill:"transparent"}));
+    g.appendChild(el("circle",{class:"dot", cx:x, cy:y, r:8.5,
+      fill:isBuy?"var(--buy)":"var(--sell)", stroke:"var(--surface)","stroke-width":2}));
+    const t = el("text",{x:x, y:y+3.5, "text-anchor":"middle"}); t.textContent=String(rid);
+    g.appendChild(t);
+    const show = ev => showSigTip(sym, s, rid, g, ev);
+    g.addEventListener("pointerenter", show);
+    g.addEventListener("focus", show);
+    g.addEventListener("pointerleave", ()=>hideTip(sym));
+    g.addEventListener("blur", ()=>hideTip(sym));
+    g.addEventListener("click", ()=>{
+      const ci = st.curated.findIndex(c=>c.d===s.d);
+      if (ci>=0) selectCurated(sym, ci);
+    });
+    svg.appendChild(g);
+  }
+  /* crosshair + tooltip */
+  const cross = el("line",{class:"crossline", y1:padT, y2:padT+priceH+gap+volH, x1:-9, x2:-9, opacity:0});
+  svg.appendChild(cross);
+  const overlay = el("rect",{x:padL, y:padT, width:plotW, height:priceH+gap+volH, fill:"transparent"});
+  overlay.addEventListener("pointermove", ev=>{
+    const box = svg.getBoundingClientRect();
+    const sx = (ev.clientX-box.left)*W/box.width;
+    const i = Math.max(0, Math.min(n-1, Math.floor((sx-padL)/slot)));
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("opacity",.8);
+    showTip(sym, rows, i, ev);
+  });
+  overlay.addEventListener("pointerleave", ()=>{ cross.setAttribute("opacity",0); hideTip(sym); });
+  svg.appendChild(overlay);
+  ch.scroll.appendChild(svg);
+}
+function tipRow(tb, k, v, opts){
+  const tr = el("tr");
+  const kd = el("td",{class:"k"});
+  if (opts && opts.key){ kd.appendChild(el("span",{class:"lk", style:"border-color:"+opts.key})); }
+  kd.appendChild(document.createTextNode(k));
+  const vd = el("td",{class:"v", text:v});
+  if (opts && opts.color) vd.style.color = opts.color;
+  tr.appendChild(kd); tr.appendChild(vd); tb.appendChild(tr);
+}
+function showTip(sym, rows, i, ev){
+  const st = STOCKS[sym], ch = charts[sym], r = rows[i];
+  const dp = sym==="4958"?1:0;
+  const prev = i>0 ? rows[i-1] : r;
+  const chg = r.c-prev.c, up = chg>=0;
+  const tt = ch.tooltip;
+  tt.textContent = "";
+  tt.appendChild(el("div",{class:"tdate", text:r.d.replace(/-/g,"/")+"（週"+"日一二三四五六"[new Date(r.d).getDay()]+"）"}));
+  const tb = el("table");
+  tipRow(tb,"開盤", fmt(r.o,dp));
+  tipRow(tb,"最高", fmt(r.h,dp));
+  tipRow(tb,"最低", fmt(r.l,dp));
+  tipRow(tb,"收盤", fmt(r.c,dp)+"（"+(up?"+":"")+fmt(chg,dp)+"）",{color:up?"var(--up)":"var(--dn)"});
+  tipRow(tb,"成交量", fmtVol(r.v));
+  if (r.ma20!=null){
+    tipRow(tb,"月線 MA20", fmt(r.ma20,dp),{key:"var(--ma20)"});
+    tipRow(tb,"乖離(20)", ((r.c-r.ma20)/r.ma20*100).toFixed(1)+"%");
+  }
+  if (r.ma60!=null) tipRow(tb,"季線 MA60", fmt(r.ma60,dp),{key:"var(--ma60)"});
+  tt.appendChild(tb);
+  positionTip(ch, ev);
+}
+function showSigTip(sym, s, rid, g, ev){
+  const ch = charts[sym];
+  const tt = ch.tooltip;
+  tt.textContent = "";
+  tt.appendChild(el("div",{class:"tdate", text:s.d.replace(/-/g,"/")+"　"+RULES[rid-1].name}));
+  const tb = el("table");
+  tipRow(tb,"訊號價", fmt(s.px, sym==="4958"?1:0));
+  tipRow(tb,"乖離(20)", (s.dev>0?"+":"")+s.dev+"%");
+  tt.appendChild(tb);
+  const d = el("div",{style:"max-width:220px;margin-top:4px", text:RULES[rid-1].short});
+  tt.appendChild(d);
+  positionTip(ch, ev, g);
+}
+function positionTip(ch, ev, g){
+  const tt = ch.tooltip, sc = ch.scroll;
+  tt.style.display = "block";
+  const box = sc.getBoundingClientRect();
+  let px, py;
+  if (ev && ev.clientX!=null){ px = ev.clientX-box.left+sc.scrollLeft; py = ev.clientY-box.top; }
+  else if (g){ const b = g.getBoundingClientRect(); px = b.left-box.left+sc.scrollLeft; py = b.top-box.top; }
+  const w = tt.offsetWidth || 180;
+  const flip = px > sc.scrollWidth*0.62;
+  tt.style.left = (flip ? px-w-18 : px+18)+"px";
+  tt.style.top = Math.max(4, Math.min(py-40, sc.clientHeight-tt.offsetHeight-8))+"px";
+}
+function hideTip(sym){ charts[sym].tooltip.style.display="none"; }
+function flashSignal(sym, d){
+  const ch = charts[sym];
+  const mark = ch.svg && ch.svg.querySelector(`.sigmark[data-d="${d}"]`);
+  if (!mark) return;
+  const smooth = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  mark.scrollIntoView({block:"nearest", inline:"center", behavior:smooth});
+  mark.classList.remove("flash");
+  requestAnimationFrame(()=>mark.classList.add("flash"));
+  setTimeout(()=>mark.classList.remove("flash"), 2600);
+}
+/* ================= tables ================= */
+function buildTables(sym){
+  const st = STOCKS[sym];
+  const dp = sym==="4958"?1:0;
+  const det = el("details",{class:"tblview"});
+  det.appendChild(el("summary",{text:"表格檢視：全部訊號一覽＋最近 15 個交易日明細"}));
+  const box = el("div",{class:"tbl-scroll"});
+  const t1 = el("table",{class:"data"});
+  const h1 = el("tr");
+  for (const h of ["日期","法則","訊號","訊號價","乖離(20)"]) h1.appendChild(el("th",{text:h}));
+  t1.appendChild(h1);
+  for (const s of st.signals){
+    const rid = RULEMAP[s.t];
+    const tr = el("tr");
+    tr.appendChild(el("td",{text:s.d.replace(/-/g,"/")}));
+    tr.appendChild(el("td",{class:"strong", text:CIRC[rid]+" "+RULES[rid-1].name.replace(/^[①-⑧] /,"")}));
+    tr.appendChild(el("td",{text:rid<=4?"買進":"賣出"}));
+    tr.appendChild(el("td",{class:"strong", text:fmt(s.px,dp)}));
+    tr.appendChild(el("td",{text:(s.dev>0?"+":"")+s.dev+"%"}));
+    t1.appendChild(tr);
+  }
+  box.appendChild(t1);
+  const cap2 = el("div",{class:"eyebrow", text:"最近 15 個交易日", style:"margin:16px 0 6px"});
+  box.appendChild(cap2);
+  const t2 = el("table",{class:"data"});
+  const h2 = el("tr");
+  for (const h of ["日期","開盤","最高","最低","收盤","漲跌","成交量(張)","MA20","MA60"]) h2.appendChild(el("th",{text:h}));
+  t2.appendChild(h2);
+  const rows = st.rows.slice(-15);
+  rows.forEach((r,i)=>{
+    const prev = i>0 ? rows[i-1] : st.rows[st.rows.length-16];
+    const chg = r.c-prev.c;
+    const tr = el("tr");
+    tr.appendChild(el("td",{text:r.d.replace(/-/g,"/")}));
+    for (const v of [r.o,r.h,r.l]) tr.appendChild(el("td",{text:fmt(v,dp)}));
+    tr.appendChild(el("td",{class:"strong", text:fmt(r.c,dp)}));
+    const cd = el("td",{text:(chg>=0?"+":"")+fmt(chg,dp)});
+    cd.style.color = chg>=0?"var(--up)":"var(--dn)";
+    tr.appendChild(cd);
+    tr.appendChild(el("td",{text:fmt(Math.round(r.v/1000))}));
+    tr.appendChild(el("td",{text:fmt(r.ma20,dp)}));
+    tr.appendChild(el("td",{text:fmt(r.ma60,dp)}));
+    t2.appendChild(tr);
+  });
+  box.appendChild(t2);
+  det.appendChild(box);
+  return det;
+}
+/* ================= advice ================= */
+function buildAdvice(){
+  const grid = $("#adviceGrid");
+  for (const sym of ["2330","4958"]){
+    const st = STOCKS[sym], a = st.advice, dp = sym==="4958"?1:0;
+    const card = el("div",{class:"card advice-card"});
+    card.appendChild(el("h3",{text:st.name+"（"+sym+"）參考價位"}));
+    const snap = el("div",{class:"snap"});
+    const pairs = [["收盤("+a.asof+")", fmt(a.close,dp)],["月線 MA20", fmt(a.ma20,dp)],["季線 MA60", fmt(a.ma60,dp)],
+      ["乖離(20)", (a.dev20>0?"+":"")+a.dev20+"%"],["52週高", fmt(a.hi52,dp)],["52週低", fmt(a.lo52,dp)]];
+    for (const [k,v] of pairs){
+      const s = el("span"); s.appendChild(document.createTextNode(k+" "));
+      s.appendChild(el("b",{text:v})); snap.appendChild(s);
+    }
+    card.appendChild(snap);
+    const flex = el("div",{class:"advice-flex"});
+    flex.appendChild(buildLadder(sym));
+    const txt = el("div",{class:"advice-text"});
+    const mk = (title, colorVar, items) => {
+      const h = el("h4");
+      h.appendChild(el("span",{class:"keyrect", style:"background:var("+colorVar+")"}));
+      h.appendChild(document.createTextNode(title));
+      txt.appendChild(h);
+      const ul = el("ul");
+      for (const it of items){ const li = el("li"); li.innerHTML = it; ul.appendChild(li); }
+      txt.appendChild(ul);
+    };
+    mk("買進建議", "--buy", a.buys);
+    mk("賣出／停損建議", "--sell", a.sells);
+    const stance = el("p",{style:"font-size:13px;color:var(--ink2);margin:10px 0 0"});
+    stance.appendChild(el("b",{text:"型態解讀："}));
+    stance.appendChild(document.createTextNode(a.stance));
+    txt.appendChild(stance);
+    flex.appendChild(txt);
+    card.appendChild(flex);
+    grid.appendChild(card);
+  }
+}
+function buildLadder(sym){
+  const st = STOCKS[sym], a = st.advice, L = a.ladder, dp = sym==="4958"?1:0;
+  const W=296, H=300, padT=12, padB=12, bandX=100, bandW=100;
+  const Y = p => padT + (H-padT-padB)*(1-(p-L.min)/(L.max-L.min));
+  const box = el("div",{class:"ladder-box"});
+  const svg = el("svg",{viewBox:`0 0 ${W} ${H}`, role:"img","aria-label":st.name+" 參考價位階梯圖，數值同右側文字說明"});
+  svg.appendChild(el("line",{class:"axisline", x1:bandX-6, x2:bandX-6, y1:padT, y2:H-padB}));
+  const colors = {tp:"var(--sell)", tp2:"var(--sell)", buyA:"var(--buy)", buyB:"var(--buy)", stop:"var(--crit)", now:"var(--ink)"};
+  for (const b of L.bands){
+    const c = colors[b.kind];
+    if (b.kind==="now"){
+      const y = Y(b.px);
+      svg.appendChild(el("line",{x1:bandX-14, x2:bandX+bandW, y1:y, y2:y, stroke:c, "stroke-width":2}));
+      svg.appendChild(el("polygon",{points:`${bandX-14},${y-5} ${bandX-14},${y+5} ${bandX-5},${y}`, fill:c}));
+      svg.appendChild(el("text",{class:"lad-band-label", x:bandX+bandW+6, y:y+4, text:"目前"}));
+      svg.appendChild(el("text",{class:"lad-price", x:bandX-22, y:y+4, "text-anchor":"end", text:fmt(b.px,dp)}));
+    } else if (b.kind==="tp2"){
+      const y = Y(b.px);
+      svg.appendChild(el("line",{x1:bandX, x2:bandX+bandW, y1:y, y2:y, stroke:c, "stroke-width":1.5}));
+      svg.appendChild(el("text",{class:"lad-band-label", x:bandX+bandW+6, y:y+4, text:b.label}));
+      svg.appendChild(el("text",{class:"lad-price", x:bandX-12, y:y+4, "text-anchor":"end", text:fmt(b.px,dp)}));
+    } else if (b.kind==="stop"){
+      const y = Y(b.px);
+      svg.appendChild(el("line",{x1:bandX, x2:bandX+bandW, y1:y, y2:y, stroke:c, "stroke-width":2}));
+      svg.appendChild(el("text",{class:"lad-band-label", x:bandX, y:y+15, fill:c, text:"✕ "+b.label}));
+      svg.appendChild(el("text",{class:"lad-price", x:bandX-12, y:y+4, "text-anchor":"end", text:fmt(b.px,dp)}));
+    } else {
+      const y1 = Y(b.hi), y2 = Y(b.lo);
+      svg.appendChild(el("rect",{x:bandX, y:y1, width:bandW, height:Math.max(3,y2-y1), fill:c, opacity:.22, rx:3}));
+      svg.appendChild(el("line",{x1:bandX, x2:bandX+bandW, y1:y1, y2:y1, stroke:c,"stroke-width":1.5}));
+      svg.appendChild(el("text",{class:"lad-band-label", x:bandX, y:y1-4, text:b.label}));
+      svg.appendChild(el("text",{class:"lad-price", x:bandX-12, y:(y1+y2)/2+4, "text-anchor":"end",
+        text:fmt(b.lo,dp)+(b.hi>b.lo?"–"+fmt(b.hi,dp):"")}));
+    }
+  }
+  box.appendChild(svg);
+  return box;
+}
+/* ================= filters ================= */
+function bindFilters(){
+  $("#rangeSeg").querySelectorAll("button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      $("#rangeSeg").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));
+      b.setAttribute("aria-pressed","true");
+      state.months = +b.dataset.range;
+      renderChart("2330"); renderChart("4958");
+    });
+  });
+  const wire = (id,key) => $(id).addEventListener("change", e=>{ state[key]=e.target.checked; renderChart("2330"); renderChart("4958"); });
+  wire("#togMa20","ma20"); wire("#togMa60","ma60"); wire("#togBuy","buy"); wire("#togSell","sell");
+}
+/* ================= boot ================= */
+buildSchematic();
+buildStockCard("2330");
+buildStockCard("4958");
+buildAdvice();
+bindFilters();
+</script>
+</body>
+</html>
