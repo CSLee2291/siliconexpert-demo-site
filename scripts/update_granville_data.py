@@ -25,8 +25,10 @@ voidful/tw_stocker（raw.githubusercontent.com，Yahoo Finance 實際成交之 5
     python scripts/update_granville_data.py --csv-dir data  # 額外輸出各股一年日 K 的 CSV
 
 腳本會就地改寫 public/granville.html 中以 /*DATA:xxxx*/、/*SIG:xxxx*/、/*ADV:xxxx*/
-與 <!--SRC--> 標記包住的區塊；「實戰解讀」註解與參考價位階梯為人工撰寫的教學內容，
-更新資料後請人工複核（腳本結尾會印出新的關鍵價位供對照）。
+與 <!--SRC--> 標記包住的區塊。Section 03 的參考買賣價位（價格階梯、買進／賣出建議、
+型態解讀）由最新資料與八大法則訊號「機械式」重新推導：買進區取月線／季線支撐或站回
+月線之觸發價、停利取前高區與 ⑧ 正乖離門檻、停損取季線 −2%（空頭時改取近期低點），
+所有價位皆依台股升降單位進位。「實戰解讀」的歷史案例註解為教學內容，保留人工撰寫。
 """
 from __future__ import annotations
 
@@ -249,6 +251,117 @@ def detect_signals(rows, dev_hi, dev_lo):
     return out
 
 
+# ------------------------------------------------- signal-derived levels --
+CIRC = {"B1": "①", "B2": "②", "B3": "③", "B4": "④",
+        "S1": "⑤", "S2": "⑥", "S3": "⑦", "S4": "⑧"}
+
+
+def tick_of(p):
+    """台股升降單位（撮合最小跳動價）。"""
+    for lim, t in ((10, 0.01), (50, 0.05), (100, 0.1), (500, 0.5), (1000, 1.0)):
+        if p < lim:
+            return t
+    return 5.0
+
+
+def rt(p):
+    t = tick_of(p)
+    v = round(round(p / t) * t, 2)
+    return int(v) if float(v).is_integer() else v
+
+
+def fp(v):
+    return f"{v:,.0f}" if float(v).is_integer() else f"{v:,.1f}"
+
+
+def zone(a, b):
+    return f"{fp(a)}–{fp(b)}"
+
+
+def generate_advice(cfg, win, signals):
+    """依最新收盤與八大法則訊號，機械式推導參考買賣價位與說明文字。"""
+    last = win[-1]
+    c, m20, m60 = last["c"], last["ma20"], last["ma60"]
+    dev20 = round((c - m20) / m20 * 100, 1)
+    hi52 = max(r["h"] for r in win)
+    lo52 = min(r["l"] for r in win)
+    sl60 = (m60 - win[-4]["ma60"]) if len(win) > 4 and win[-4]["ma60"] else 0.0
+    recent_low = min(r["l"] for r in win[-20:])
+    above20, above60 = c >= m20, c >= m60
+    dev_hi_pct = round(cfg["dev_hi"] * 100)
+    near_hot = dev20 >= dev_hi_pct * 0.7
+
+    m20_zone = (rt(m20 * 0.995), rt(m20 * 1.01))    # ③ 回檔月線支撐
+    m20_reclaim = (rt(m20), rt(m20 * 1.01))          # ① 站回月線觸發
+    m60_zone = (rt(m60 * 0.99), rt(m60 * 1.01))      # 季線支撐
+    tp_band = (rt(hi52 * 0.98), rt(hi52))            # 前高壓力／停利
+    dev_line = rt(m20 * (1 + cfg["dev_hi"]))         # ⑧ 正乖離門檻價
+    reb_line = rt(m20 * (1 + cfg["dev_lo"]))         # ④ 負乖離門檻價
+    stop = rt(m60 * 0.98) if above60 else rt(recent_low * 0.99)
+
+    buys, sells = [], []
+    if near_hot:
+        buys.append(f"<b>不追高</b>：收盤正乖離已達 <b>{dev20:+.1f}%</b>，"
+                    f"接近⑧訊號門檻（+{dev_hi_pct}%）——等回檔而非追價。")
+    if above20:
+        buy_a_label = "③ 回測月線買進"
+        buys.append(f"<b>首選（法則③／②）</b>：拉回測試上揚月線 <b>{zone(*m20_zone)}</b> "
+                    f"不破時買進；短暫跌破後 3 日內站回（②假跌破）亦可進場。")
+        buys.append(f"<b>次選</b>：月線失守時退守季線 <b>{zone(*m60_zone)}</b> 承接。")
+    elif above60:
+        buy_a_label = "① 站回月線買進"
+        buys.append(f"<b>積極（法則①／②）</b>：收盤帶量重新站上月線 <b>{zone(*m20_reclaim)}</b> "
+                    f"且月線走平翻揚時進場；跌破後 3 日內快速收復（②假跌破）亦視為買點。")
+        buys.append(f"<b>穩健（法則③）</b>：拉回測試上揚季線 <b>{zone(*m60_zone)}</b> 不破時分批承接。")
+    else:
+        buy_a_label = "① 站回月線買進"
+        buys.append(f"<b>觀望為主（法則①）</b>：空頭格局，待收盤重新站上月線 "
+                    f"<b>{zone(*m20_reclaim)}</b> 且月線走平再考慮進場。")
+        buys.append(f"<b>短線（法則④）</b>：負乖離達 {round(cfg['dev_lo']*100)}%"
+                    f"（約 <b>{fp(reb_line)}</b> 以下）僅適合搶反彈，彈至月線附近應減碼。")
+
+    sells.append(f"<b>停利（法則⑧＋前高）</b>：反彈至前高區 <b>{zone(*tp_band)}</b> 分批減碼；"
+                 f"正乖離 ≥ +{dev_hi_pct}%（約 <b>{fp(dev_line)}</b>）觸發⑧訊號時加速停利。")
+    if above60:
+        sells.append(f"<b>停損（法則⑤)</b>：收盤跌破季線且 3 日未收復（約 <b>{fp(stop)}</b>）出場，"
+                     f"避免月線⑤訊號在盤整期反覆。")
+    else:
+        sells.append(f"<b>停損</b>：跌破近期低點（約 <b>{fp(stop)}</b>）出場；"
+                     f"反彈觸及下彎均線不過（⑥⑦）為最後減碼機會。")
+
+    if above20 and near_hot:
+        stance = (f"波段強勢但正乖離偏大（{dev20:+.1f}%）：持有者沿月線續抱、"
+                  f"以⑧乖離標尺分批停利；空手者等③或②的回檔買點，勿追高。")
+    elif above20:
+        stance = "股價收於月線之上、季線上揚，多頭架構完整——屬「回檔找買點」而非「反轉找賣點」的格局。"
+    elif above60 and sl60 >= 0:
+        stance = "股價於月線下方、上揚季線上方整理：多頭架構未破壞，等①站回月線或季線支撐的確認再進場。"
+    else:
+        stance = "月線與季線之下的空頭格局：反彈至均線附近是⑥⑦減碼點，僅④負乖離過大適合短線搶反彈。"
+    if signals:
+        s = signals[-1]
+        stance += (f"（最近訊號：{s['d'].replace('-', '/')} {CIRC[s['t']]}，"
+                   f"訊號價 {fp(s['px'])}、乖離 {s['dev']:+.1f}%）")
+
+    lmin = rt(min(stop, c, m60_zone[0]) * 0.965)
+    lmax = rt(max(dev_line, tp_band[1], c) * 1.02)
+    ladder = {"min": lmin, "max": lmax, "bands": [
+        {"kind": "tp", "lo": tp_band[0], "hi": tp_band[1], "label": "停利／壓力 前高區"},
+        {"kind": "tp2", "px": dev_line, "label": f"⑧ 乖離+{dev_hi_pct}%"},
+        {"kind": "now", "px": c, "label": f"收盤 {fp(c)}"},
+        {"kind": "buyA", "lo": (m20_zone if above20 else m20_reclaim)[0],
+         "hi": (m20_zone if above20 else m20_reclaim)[1], "label": buy_a_label},
+        {"kind": "buyB", "lo": m60_zone[0], "hi": m60_zone[1], "label": "季線支撐買進"},
+        {"kind": "stop", "px": stop,
+         "label": "停損 跌破季線 −2%" if above60 else "停損 跌破近期低點"},
+    ]}
+    return {
+        "asof": last["d"].replace("-", "/"), "close": c, "ma20": m20, "ma60": m60,
+        "dev20": dev20, "hi52": hi52, "lo52": lo52,
+        "ladder": ladder, "buys": buys, "sells": sells, "stance": stance,
+    }
+
+
 # ------------------------------------------------------------------ html --
 def replace_between(html, pattern, replacement):
     new, cnt = re.subn(pattern, replacement, html, count=1, flags=re.S)
@@ -257,20 +370,16 @@ def replace_between(html, pattern, replacement):
     return new
 
 
-def inject(html, sym, win, signals):
+def inject(html, sym, win, signals, advice):
     dj = json.dumps(win, ensure_ascii=False, separators=(",", ":"))
     sj = json.dumps(signals, ensure_ascii=False, separators=(",", ":"))
-    last = win[-1]
-    dev20 = round((last["c"] - last["ma20"]) / last["ma20"] * 100, 1)
-    adv = (f'asof:"{last["d"].replace("-", "/")}", close:{last["c"]}, '
-           f'ma20:{last["ma20"]}, ma60:{last["ma60"]}, dev20:{dev20}, '
-           f'hi52:{max(r["h"] for r in win)}, lo52:{min(r["l"] for r in win)}')
+    aj = json.dumps(advice, ensure_ascii=False, separators=(",", ":"))
     html = replace_between(html, rf"/\*DATA:{sym}\*/.*?/\*:DATA\*/",
                            f"/*DATA:{sym}*/{dj}/*:DATA*/")
     html = replace_between(html, rf"/\*SIG:{sym}\*/.*?/\*:SIG\*/",
                            f"/*SIG:{sym}*/{sj}/*:SIG*/")
     html = replace_between(html, rf"/\*ADV:{sym}\*/.*?/\*:ADV\*/",
-                           f"/*ADV:{sym}*/{adv}/*:ADV*/")
+                           f"/*ADV:{sym}*/{aj}/*:ADV*/")
     return html
 
 
@@ -320,12 +429,15 @@ def main():
         cut = (date.fromisoformat(rows[-1]["d"]) - timedelta(days=365)).isoformat()
         win = [r for r in rows if r["d"] >= cut]
         signals = detect_signals(win, cfg["dev_hi"], cfg["dev_lo"])
-        html = inject(html, sym, win, signals)
+        advice = generate_advice(cfg, win, signals)
+        html = inject(html, sym, win, signals, advice)
         print(f"  [{sym}] {cfg['name']}: {win[0]['d']} ~ {win[-1]['d']}"
               f"（{len(win)} 個交易日，{len(signals)} 個訊號，來源 {used}）")
-        last = win[-1]
-        print(f"        收盤 {last['c']}  MA20 {last['ma20']}  MA60 {last['ma60']}"
-              f"  52週高 {max(r['h'] for r in win)}  52週低 {min(r['l'] for r in win)}")
+        print(f"        收盤 {advice['close']}  MA20 {advice['ma20']}  MA60 {advice['ma60']}"
+              f"  乖離 {advice['dev20']:+.1f}%  52週高 {advice['hi52']}  52週低 {advice['lo52']}")
+        for b in advice["ladder"]["bands"]:
+            px = f"{b['lo']}–{b['hi']}" if "lo" in b else str(b["px"])
+            print(f"        {b['label']}: {px}")
 
         if args.csv_dir:
             args.csv_dir.mkdir(parents=True, exist_ok=True)
@@ -349,8 +461,8 @@ def main():
     html = update_source_note(html, source_desc, first_d, last_d)
     args.html.write_text(html, encoding="utf-8")
     print(f"已更新 {args.html}")
-    print("提醒：K 線與訊號已自動更新；「實戰解讀」註解與 Section 03 的價位階梯／"
-          "文字建議為人工教學內容，請依上方新關鍵價位複核調整。")
+    print("K 線、訊號與 Section 03 的買賣價位（階梯圖＋文字建議）均已依最新資料"
+          "與八大法則訊號重新推導；「實戰解讀」歷史案例註解為人工教學內容，維持不變。")
 
 
 if __name__ == "__main__":
